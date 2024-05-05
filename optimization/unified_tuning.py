@@ -6,9 +6,9 @@ import json
 import pandas as pd
 
 class UnifiedTuner:
-    def __init__(self, asset: str, asset_type: str):
-        self.asset = asset
-        self.asset_type = asset_type
+    # def __init__(self, asset: str, asset_type: str):
+    #     self.asset = asset
+    #     self.asset_type = asset_type
 
     def grid_search_tuning(self, stock_data: pd.DataFrame):
         model_trainer = ModelTrainer()

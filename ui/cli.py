@@ -1,33 +1,29 @@
 import argparse
 from rich.console import Console
-from rich.table import Table
 from tqdm import tqdm
 from features.feature_engineering import FeatureEngineer
 from data.data_processing import DataProcessor
 from models.model_training import ModelTrainer
-from models.optuna_optimization import run_optuna_optimization
+from models.model_tuning import ModelTuner
+from optimization.unified_tuning import UnifiedTuner
+from distributed.distributed_training import DistributedTraining
+from sklearn.model_selection import train_test_split
+import pandas as pd
 
+# Initialize components
 fe = FeatureEngineer()
 mt = ModelTrainer()
+mtu = ModelTuner()
+ut = UnifiedTuner()
+dt = DistributedTraining()
+console = Console()
 
 class UserInterface:
     def __init__(self):
-        self.console = Console()
+        self.console = console
 
     def display_welcome_message(self):
         self.console.print("[bold cyan]Welcome to Stock AI Bot CLI[/bold cyan]")
-
-    def select_training_mode(self):
-        self.console.print("\n[bold yellow]Select Training Mode:[/bold yellow]")
-        table = Table(title="Training Modes")
-        table.add_column("Option", justify="right")
-        table.add_column("Description")
-        table.add_row("1", "Advanced Grid Search Tuning")
-        table.add_row("2", "Optuna Optimization")
-
-        self.console.print(table)
-        mode = self.console.input("[bold]Enter your choice (1/2):[/bold] ")
-        return mode
 
     def configure_arguments(self):
         parser = argparse.ArgumentParser(description="Stock AI Bot Command-Line Interface")
@@ -50,26 +46,34 @@ class UserInterface:
             cleaned_data = DataProcessor.clean_and_normalize_data(aggregated_data)
             enhanced_data = fe.add_technical_indicators(cleaned_data)
 
-        # Select training mode
-        mode = self.select_training_mode()
         with tqdm(total=100, desc="Training Progress", bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt}") as progress_bar:
-            if mode == "1":
-                progress_bar.set_description("Advanced Grid Search Tuning")
-                results = mt.advanced_grid_search_tune_model(enhanced_data)
-                progress_bar.update(100)
-                best_models = results["best_models"]
-                evaluation_metrics = results["evaluation_metrics"]
-                self.console.print(f"[bold]Model Evaluation Metrics (Grid Search):[/bold] {evaluation_metrics}")
-            elif mode == "2":
-                progress_bar.set_description("Optuna Optimization")
-                run_optuna_optimization(enhanced_data)
-                progress_bar.update(100)
-            elif mode == "AI Decision":
-                progress_bar.set_description("AI Decision")
-                unified_tuner.ai_decision(enhanced_data)
-                progress_bar.update(100)
-            else:
-                self.console.print("[bold red]Invalid option. Exiting...[/bold red]")
+            progress_bar.set_description("Training the Model")
+            trained_model = mt.train(enhanced_data)
+            progress_bar.update(40)
+
+            progress_bar.set_description("Tuning the Model")
+            tuned_model = mtu.tune(trained_model)
+            progress_bar.update(30)
+
+            progress_bar.set_description("Optimizing the Model")
+            optimized_model = ut.unified_tuning(tuned_model)
+            progress_bar.update(30)
+
+            self.console.print(f"[bold]Model Training, Tuning, and Optimization completed successfully![/bold]")
+
+        # Prepare data for collaborative training
+        feature_columns = ["sma_20", "sma_50", "sma_200", "ema_20", "ema_50", "price_pct_change", "on_balance_volume"]
+        target_column = "close"
+        X = enhanced_data[feature_columns].fillna(0)
+        y = enhanced_data[target_column].fillna(0)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+        # Execute distributed training
+        try:
+            dt.run_distributed_training(pd.concat([X_train, y_train], axis=1), optimized_model)
+            self.console.print("[bold]Successfully completed the distributed training session.[/bold]")
+        except Exception as e:
+            self.console.print(f"[bold red]Error during distributed training: {e}[/bold red]")
 
 if __name__ == "__main__":
     ui = UserInterface()
