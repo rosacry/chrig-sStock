@@ -2,10 +2,13 @@ import argparse
 from rich.console import Console
 from rich.table import Table
 from tqdm import tqdm
-from features.feature_engineering import add_technical_indicators
-from data.data_processing import clean_and_normalize_data
-from models.model_training import advanced_grid_search_tune_model
+from features.feature_engineering import FeatureEngineer
+from data.data_processing import DataProcessor
+from models.model_training import ModelTrainer
 from models.optuna_optimization import run_optuna_optimization
+
+fe = FeatureEngineer()
+mt = ModelTrainer()
 
 class UserInterface:
     def __init__(self):
@@ -31,6 +34,7 @@ class UserInterface:
         parser.add_argument("--symbol", type=str, required=True, help="Stock symbol to analyze (e.g., AAPL)")
         parser.add_argument("--risk", type=str, choices=["low", "medium", "high"], default="medium", help="Investment risk tolerance")
         parser.add_argument("--capital", type=float, required=True, help="Total capital available for investment")
+        parser.add_argument("--asset", type=str, choices=["stocks", "crypto", "options", "auto"], default="auto", help="Asset type to invest in")
         return parser.parse_args()
 
     def main(self):
@@ -43,15 +47,15 @@ class UserInterface:
         with self.console.status("[bold green]Fetching and processing data...[/bold]") as status:
             from api.api_clients import aggregate_stock_data
             aggregated_data = aggregate_stock_data(symbol)
-            cleaned_data = clean_and_normalize_data(aggregated_data)
-            enhanced_data = add_technical_indicators(cleaned_data)
+            cleaned_data = DataProcessor.clean_and_normalize_data(aggregated_data)
+            enhanced_data = fe.add_technical_indicators(cleaned_data)
 
         # Select training mode
         mode = self.select_training_mode()
         with tqdm(total=100, desc="Training Progress", bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt}") as progress_bar:
             if mode == "1":
                 progress_bar.set_description("Advanced Grid Search Tuning")
-                results = advanced_grid_search_tune_model(enhanced_data)
+                results = mt.advanced_grid_search_tune_model(enhanced_data)
                 progress_bar.update(100)
                 best_models = results["best_models"]
                 evaluation_metrics = results["evaluation_metrics"]
@@ -59,6 +63,10 @@ class UserInterface:
             elif mode == "2":
                 progress_bar.set_description("Optuna Optimization")
                 run_optuna_optimization(enhanced_data)
+                progress_bar.update(100)
+            elif mode == "AI Decision":
+                progress_bar.set_description("AI Decision")
+                unified_tuner.ai_decision(enhanced_data)
                 progress_bar.update(100)
             else:
                 self.console.print("[bold red]Invalid option. Exiting...[/bold red]")

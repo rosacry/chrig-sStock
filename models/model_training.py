@@ -5,8 +5,9 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 import pandas as pd
 import xgboost as xgb
 from api.api_clients import aggregate_data
-from features.feature_engineering import add_technical_indicators
-from data.data_processing import clean_and_normalize_data
+from features.feature_engineering import FeatureEngineer
+from data.data_processing import DataProcessor
+import json
 
 class ModelTrainer:
     def advanced_grid_search_tune_model(stock_data: pd.DataFrame):
@@ -49,6 +50,7 @@ class ModelTrainer:
             }
         }
 
+        # Models
         models = {
             "linear": LinearRegression(),
             "random_forest": RandomForestRegressor(),
@@ -56,28 +58,21 @@ class ModelTrainer:
             "xgboost": xgb.XGBRegressor()
         }
 
+        # Perform GridSearchCV tuning and store results
         best_models = {}
-        evaluation_metrics = {}
-
-        # Perform grid search for each model
         for model_name, model in models.items():
-            print(f"Tuning {model_name}...")
-            grid_search = GridSearchCV(model, param_grids[model_name], scoring="neg_mean_squared_error", cv=5)
+            grid_search = GridSearchCV(model, param_grid=param_grids[model_name], cv=3, scoring="neg_mean_squared_error")
             grid_search.fit(X_train, y_train)
-            
-            # Use the best estimator to predict and evaluate
-            best_model = grid_search.best_estimator_
-            y_pred = best_model.predict(X_test)
-            mse = mean_squared_error(y_test, y_pred)
-            mae = mean_absolute_error(y_test, y_pred)
-
-            best_models[model_name] = best_model
-            evaluation_metrics[model_name] = {
-                "mean_squared_error": mse,
-                "mean_absolute_error": mae
+            best_models[model_name] = {
+                "best_params": grid_search.best_params_,
+                "best_score": grid_search.best_score_
             }
 
-        return {
-            "best_models": best_models,
-            "evaluation_metrics": evaluation_metrics
+        # Save the results to a JSON file
+        results = {
+            "best_models": best_models
         }
+        with open('models/json/grid_content.json', 'w') as file:
+            json.dump(results, file)
+
+        return best_models

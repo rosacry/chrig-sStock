@@ -1,4 +1,4 @@
-I want to make a very complex, high-level, and sophisticated stock AI bot in python where the model gets trained to scrape a very vast and large amounts of data on the internet to learn what best choices to invest in, whether it be stocks, crypto, index funds, etc. I also want it to scrape what the top investors are investing in as well, and just any information it deems necessary to calculate the best investments. I also want to use an appealing UI and design (likely using tqdm and rich libraries). I'm going to make the learning rate really low (even though it may take a lot more time to learn, train, and process) so it's more reliable, optimize and efficient (and since I have a nvidia 3080ti with a ryzen 5900x to train the model however long I want). I would like to also add on a training program that anyone can download and use to own compute power to assist in training the model such that it becomes more efficient, optimized, and reliable. I also want to have it give the user options as to how much risk it is alloted to make, how much money total to give it (and have the ai stock bot make the decisions itself on what to do with that money) and, if they want to invest in options, and etc. In all, I want this to become one of the best stock AI bot I can possibly make it with your help. How can I go about this?
+I want to make a very complex, high-level, and sophisticated stock AI bot in python where the model gets trained to scrape a very vast and large amounts of data on the internet to learn what best choices to invest/sell in, whether it be stocks, crypto, and options. I also want it to scrape what the top investors are investing in as well, and just any information you deem necessary to calculate the best investments. I also want to use an appealing UI and design (likely using tqdm and rich libraries). I want to make the learning rate really low (even though it may take a lot more time to learn, train, and process) so it's more reliable, optimized and efficient (and since I have a nvidia 3080ti with a ryzen 5900x to train the model however long I want).I would like to also add on a training program that anyone can download and use to own compute power to assist in training the model such that it becomes more efficient, optimized, and reliable. With my computer specs, I want to train the model 24/7 (or for however long) and make it such that other people can join on the program and assist with training the model. I also want to have it give the user options as to how much risk it is allotted to make, how much money total to give it (and have the ai stock bot make the decisions itself on what to do with that money) and, if they want to invest/sell in stocks, crypto, options, or for the ai/model to make the decision for them on that. In all, I want this to become one of the best stock AI bot I can possibly make it with your help.
 
 use rosachrig@gmail.com for api accounts
 
@@ -123,3 +123,12 @@ merge files to classes based on main.py
 main cli easier and more appealing
 figure out how to money it
 check it all
+
+
+
+such that there's an option only to train the ai/model, not options as to which training mode to choose, since I updated the #file:model_training.py file, #file:optuna_optimization.py file, and #file:unified_tuning.py such that it does both the advanced grid search and optuna optimization itself. When you choose to train the ai/model, you can train it 24/7 (or for however long) and make it such that other people can join on the program and assist with training the model.
+
+
+now create the run_cli() function in the #file:main.py that does this as well and with reference to the #file:cli.py file
+
+main.py:
