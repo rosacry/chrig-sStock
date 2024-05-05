@@ -1,80 +1,86 @@
 import streamlit as st
-import pandas as pd
-from data.data_processing import clean_and_normalize_data
-from models.model_training import ModelTrainer
-from models.model_tuning import ModelTuner
-from optimization.unified_tuning import UnifiedTuner
-from distributed.distributed_training import DistributedTraining
-from api.api_clients import aggregate_stock_data, get_top_investor_holdings
-from features.feature_engineering import add_technical_indicators
-import torch
-from sklearn.model_selection import train_test_split
+from distributed_training import initialize_distributed_training  # Assuming a function is defined here
+from unified_tuning import tune_model  # Assuming tuning functions are defined here
+from data_processing import preprocess_data  # Assuming data processing is implemented here
+from feature_engineering import extract_features  # Feature engineering functions
+from model_training import train_model, run_investment_bot  # Primary model training function
+import os
+import threading
 
-# Initialize model components and distributed training
-model_trainer = ModelTrainer()
-model_tuner = ModelTuner()
-unified_tuner = UnifiedTuner()
-distributed_training = DistributedTraining()
+# Load environment variables for API keys
+ALPHA_VANTAGE_API_KEY = os.getenv('ALPHA_VANTAGE_API_KEY')
+IEX_CLOUD_API_KEY = os.getenv('IEX_CLOUD_API_KEY')
 
-def main():
-    # Streamlit page configuration
-    st.set_page_config(page_title="Stock AI Bot", page_icon="📈", layout="wide")
-    st.title("📈 Stock AI Bot Dashboard")
+# Set up the Streamlit app title
+st.title("Automated Financial AI Bot - Continuous Investment")
 
-    # User inputs
-    stock_symbol = st.text_input("Enter Stock Symbol (e.g., AAPL)", "AAPL")
-    capital = st.number_input("Enter Total Capital Available ($)", min_value=0.0, value=1000.0)
-    risk_tolerance = st.selectbox("Investment Risk Tolerance", ["Low", "Medium", "High"])
-    investment_type = st.selectbox("Choose Investment Type", ["Stocks", "Crypto", "Options", "AI Decision"])
+# Initialize global configuration for user preferences
+user_config = {
+    "balance": 0.0,
+    "risk_level": "Medium",
+    "bot_running": False
+}
 
-    # Execute when the "Train AI" button is pressed
-    if st.button("Train AI"):
-        st.write(f"Training AI for {stock_symbol} with ${capital} capital and {risk_tolerance} risk tolerance.")
-        with st.spinner("Fetching and processing data..."):
-            # Aggregate and process stock data
-            aggregated_data = aggregate_stock_data(stock_symbol, investment_type)
-            cleaned_data = clean_and_normalize_data(aggregated_data)
-            enhanced_data = add_technical_indicators(cleaned_data)
+# Define functions for user actions
+def deposit_funds(amount: float):
+    """Deposits user funds into their balance and starts the investment bot if not already running."""
+    user_config["balance"] += amount
+    st.success(f"Deposited ${amount} successfully! Current balance: ${user_config['balance']}")
+    if not user_config["bot_running"]:
+        start_investment_bot()
 
-            # Fetch holdings of top investors if relevant
-            top_investor_data = get_top_investor_holdings(stock_symbol)
+def withdraw_funds(amount: float):
+    """Withdraws user funds from their balance."""
+    if amount <= user_config["balance"]:
+        user_config["balance"] -= amount
+        st.success(f"Withdrew ${amount} successfully! Current balance: ${user_config['balance']}")
+    else:
+        st.error("Insufficient balance.")
 
-            # Integrate additional data sources if available
-            if top_investor_data:
-                st.write("Incorporating top investor holdings into the model.")
-                enhanced_data = enhanced_data.join(top_investor_data)
+def set_risk_level(level: str):
+    """Sets the risk level for investment decisions."""
+    user_config["risk_level"] = level
+    st.success(f"Risk level set to {level}")
 
-        st.write("Training model...")
-        trained_model = model_trainer.train(enhanced_data)
+def join_collaborative_training():
+    """Joins the collaborative training session and begins training."""
+    st.info("Initializing distributed training setup...")
+    initialize_distributed_training()
+    st.info("Preprocessing financial data...")
+    raw_data = {}  # Replace with your actual method to aggregate all raw data
+    processed_data = preprocess_data(raw_data)
+    st.info("Extracting features...")
+    feature_data = extract_features(processed_data)
+    st.info("Tuning model...")
+    best_params = tune_model(feature_data)
+    st.info("Starting collaborative model training...")
+    train_model(feature_data, hyperparameters=best_params)
+    st.success("Collaborative training session started successfully!")
 
-        st.write("Tuning model...")
-        tuned_model = model_tuner.tune(trained_model)
+def start_investment_bot():
+    """Starts the investment bot in a separate thread and sets the running state."""
+    user_config["bot_running"] = True
+    threading.Thread(target=run_investment_bot, args=(user_config,)).start()
+    st.info("Investment bot has started and will run continuously.")
 
-        st.write("Running Unified Tuning...")
-        if investment_type == "AI Decision":
-            optimized_model = unified_tuner.ai_decision(tuned_model)
-        else:
-            optimized_model = unified_tuner.unified_tuning(tuned_model)
+# User action UI buttons
+st.header("User Actions")
+deposit_amount = st.number_input("Deposit Amount ($)", min_value=0.0, step=10.0)
+if st.button("Deposit"):
+    deposit_funds(deposit_amount)
 
-        st.success("Model training and optimization complete!")
+withdraw_amount = st.number_input("Withdraw Amount ($)", min_value=0.0, step=10.0)
+if st.button("Withdraw"):
+    withdraw_funds(withdraw_amount)
 
-    # Allow users to join collaborative training using DistributedDataParallel (DDP)
-    if st.button("Join Collaborative Training"):
-        st.write("Joining the ongoing distributed training...")
+risk_level = st.selectbox("Select Risk Level", ["Low", "Medium", "High"])
+if st.button("Set Risk Level"):
+    set_risk_level(risk_level)
 
-        # Split the enhanced data into training and testing sets
-        feature_columns = ["sma_20", "sma_50", "sma_200", "ema_20", "ema_50", "price_pct_change", "on_balance_volume"]
-        target_column = "close"
-        X = enhanced_data[feature_columns].fillna(0)
-        y = enhanced_data[target_column].fillna(0)
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# Button to join the collaborative training session
+if st.button("Train (Join Collaborative Session)"):
+    join_collaborative_training()
 
-        try:
-            # Run distributed training with DDP
-            distributed_training.run_distributed_training(pd.concat([X_train, y_train], axis=1), tuned_model)
-            st.success("Successfully joined the distributed training session.")
-        except Exception as e:
-            st.error(f"Failed to join distributed training session: {e}")
-
-if __name__ == "__main__":
-    main()
+# Display the current balance and risk level
+st.write(f"Current balance: ${user_config['balance']}")
+st.write(f"Current risk level: {user_config['risk_level']}")

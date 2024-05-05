@@ -95,3 +95,17 @@ ui/streamlit_app.py:
 utils/logging.py:
     Log Directory: Consider allowing the log directory to be specified via an environment variable or configuration file.
     Log Levels: Make the log level configurable via a parameter to provide flexibility between development (DEBUG) and production (INFO) modes.
+
+
+streamlit_app.py layout:
+
+Buttons:
+Train - (Joins collaborative Training session to train all data provided by the accumulation of all the financial leverage api's overtime
+Deposit - User deposits money
+Withdraw - User Withdraws money
+Risk - User can decide the risk (low, medium, high)
+
+Once the user deposits money, the bot starts and never ends (i want to put it on a server or something), the ai/model now makes decisions on what to buy and sell and at what time by itself. the training button helps make the model better along the way.
+
+
+service account ID for gce: chrigsstock@chrigsstock.iam.gserviceaccount.com
