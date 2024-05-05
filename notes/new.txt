@@ -1,0 +1,97 @@
+personal tasks:
+
+    get rest of keys for api's and expand broader
+
+    configure server for distributed_training
+
+    figure out how to add money and what not
+
+    make sure the bot sells as well when necessary
+
+    modify necessary files to a class based structure 
+
+    fix much such that it aligns with cli.py
+
+    add option in cli and streamlit_app where user can add their api keys for given financial leverage
+
+    add functionality for the ai/model to buy/sell the stock independently
+
+    make sure the ai/model gets trained to scrape all stock, option, and crypto data from all given leverage financial api's
+
+
+ai proposed changes:
+
+Main Script (main.py):
+        The primary script connects all components and starts the bot.
+        Provides both CLI and Streamlit interfaces, giving users flexibility in interacting with the bot.
+        Improvement: Add a fallback mechanism for unexpected input, and handle exceptions more gracefully.
+
+    Distributed Training (distributed_training.py):
+        Implements distributed training via PyTorch DDP.
+        Clearly documents the setup, cleanup, and training process.
+        Improvement: Consider including learning rate scheduling and adaptive optimizers for efficiency.
+
+    Model Optimization (optuna_optimization.py, model_training.py, model_tuning.py):
+        Optuna Optimization: Implements parameter tuning using Optuna, making it suitable for automated hyperparameter tuning.
+        Model Training: Provides advanced grid search to train and select optimal models.
+        Model Tuning: Implements GridSearchCV across different models.
+        Improvement: Enhance grid search by including additional regression models.
+
+    User Interface (cli.py, streamlit_app.py):
+        CLI: Rich and TQDM provide an appealing user experience, and the CLI covers various investment options.
+        Streamlit App: A comprehensive dashboard for model training, optimization, and collaborative training.
+        Improvement: Consider logging user choices and feedback for future enhancements.
+
+    Data Collection & Processing (api_clients.py, data_processing.py, load_data.py):
+        API Clients: Includes reusable clients for various APIs with retry mechanisms.
+        Data Processing: Handles cleaning and normalizing data effectively.
+        Load Data: Combines feature engineering and processing into a cohesive function.
+        Improvement: Add failover for missing API keys and improve error handling.
+
+    Feature Engineering (feature_engineering.py):
+        Generates key technical indicators for training models.
+        Improvement: Consider additional features like Bollinger Bands, MACD, and more.
+
+    Unified Tuning (unified_tuning.py):
+        Combines grid search and Optuna-based tuning into a unified approach.
+        Improvement: Separate concerns by decoupling tuning types for clearer implementation.
+
+
+    and
+
+
+api/api_clients.py:
+    Error Handling: While retry logic is present, consider logging failed requests or specific errors to track persistent issues.
+    Additional Crypto or Index APIs: Explore incorporating more APIs if a specific client doesn't return sufficient data.
+
+data/data_processing.py
+    Logging: Consider adding logging for errors or issues that occur during data processing.
+
+distributed/distributed_training.py:
+    Exception Handling: Consider adding error handling or logging in the training loop for debugging.
+
+models/model_training.py:
+    Scoring Metric: Consider making the scoring metric configurable via a parameter for flexibility.
+
+models/model_tuning.py:
+    Reduce Redundancy: This file appears to overlap in functionality with model_training.py. You could combine them to reduce redundancy and differentiate only based on parameter grids or other criteria.
+
+optimization/unified_tuning.py:
+    Configuration Parameters: Consider making asset_symbol and asset_type configurable via command-line arguments or a configuration file.
+    Logging and Visualization:
+        Implement logging to capture model training and optimization results.
+        Visualize optimization results (e.g., feature importance, hyperparameter distributions).
+
+ui/cli.py:
+    Error Handling: Add error handling for unsupported asset types or data not being available.
+    Additional Options: Consider adding further training modes or model choices.
+
+ui/streamlit_app.py:
+    Data Visualization:
+        Add graphical representations (e.g., line charts for predictions) to visualize model outputs.
+    Input Validation:
+        Consider validating asset symbols or providing suggestions for known assets.
+
+utils/logging.py:
+    Log Directory: Consider allowing the log directory to be specified via an environment variable or configuration file.
+    Log Levels: Make the log level configurable via a parameter to provide flexibility between development (DEBUG) and production (INFO) modes.

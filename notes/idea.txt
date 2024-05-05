@@ -132,3 +132,43 @@ such that there's an option only to train the ai/model, not options as to which 
 now create the run_cli() function in the #file:main.py that does this as well and with reference to the #file:cli.py file
 
 main.py:
+
+
+
+
+
+
+    Main Script (main.py):
+        The primary script connects all components and starts the bot.
+        Provides both CLI and Streamlit interfaces, giving users flexibility in interacting with the bot.
+        Improvement: Add a fallback mechanism for unexpected input, and handle exceptions more gracefully.
+
+    Distributed Training (distributed_training.py):
+        Implements distributed training via PyTorch DDP.
+        Clearly documents the setup, cleanup, and training process.
+        Improvement: Consider including learning rate scheduling and adaptive optimizers for efficiency.
+
+    Model Optimization (optuna_optimization.py, model_training.py, model_tuning.py):
+        Optuna Optimization: Implements parameter tuning using Optuna, making it suitable for automated hyperparameter tuning.
+        Model Training: Provides advanced grid search to train and select optimal models.
+        Model Tuning: Implements GridSearchCV across different models.
+        Improvement: Enhance grid search by including additional regression models.
+
+    User Interface (cli.py, streamlit_app.py):
+        CLI: Rich and TQDM provide an appealing user experience, and the CLI covers various investment options.
+        Streamlit App: A comprehensive dashboard for model training, optimization, and collaborative training.
+        Improvement: Consider logging user choices and feedback for future enhancements.
+
+    Data Collection & Processing (api_clients.py, data_processing.py, load_data.py):
+        API Clients: Includes reusable clients for various APIs with retry mechanisms.
+        Data Processing: Handles cleaning and normalizing data effectively.
+        Load Data: Combines feature engineering and processing into a cohesive function.
+        Improvement: Add failover for missing API keys and improve error handling.
+
+    Feature Engineering (feature_engineering.py):
+        Generates key technical indicators for training models.
+        Improvement: Consider additional features like Bollinger Bands, MACD, and more.
+
+    Unified Tuning (unified_tuning.py):
+        Combines grid search and Optuna-based tuning into a unified approach.
+        Improvement: Separate concerns by decoupling tuning types for clearer implementation.
