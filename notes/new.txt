@@ -145,3 +145,22 @@ create the join_collaborative_training() function in the streamlit_app.py file s
 make models more modular, implement correctly in distributed_training.py
 
 create an evaluation for the ai/model
+
+
+fix stupid prompt in root cloud 10rosa....
+
+
+The user should only have these options:
+Deposit funds - User deposits funds
+
+Withdraw funds - The Ai decides best what to sell at the moment given how much the user wants to withdraw
+
+Risk level - low, medium, high
+
+Investment Type - Stocks, Crypto, Options, or let the AI decide
+
+Starting AI Bot - Once the user starts it, they're allowed stop their machine instance on their own machine and the AI bot won't stop, since it'll be running on the server side (but every person has their own independent bot with the latest update model)
+
+Join Collaborate Training - Where the User connects to the GCE that uses ray, where they user can use their personal computational power to assist with training and tuning the overall model.
+
+The model will update everyday since the leveraging financial api's will scrape for new information everyday, which performs retraining and incremental learning on the model, where the model will update itself constantly without the user having to do anything regardless if their AI bot is still running

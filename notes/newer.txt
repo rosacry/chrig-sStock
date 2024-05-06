@@ -1,0 +1,16 @@
+implement these functions:
+    update_user_funds, withdraw_user_funds, fetch_portfolio_data
+
+model_training.py
+    fix pre_trained_model_path (make sure it performs incremental learning and retraining)
+
+model_tuning.py
+    modify the algorithm such that only model_training.py takes information from data_processing.py
+
+optuna_optimization.py
+    modify the algorithm such that only model_training.py takes information from data_processing.py
+
+distributed_training.py
+    make sure model_training, model_tuning, and optuna_optimization.py are correctly implemented
+
+for all models modify parameters for machine learning and that the model performs incremental learning and retraining

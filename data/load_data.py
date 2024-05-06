@@ -1,25 +1,21 @@
-# Import necessary clients and utilities
-from api.api_clients import aggregate_data  # Assuming aggregate_data retrieves raw asset data
-from features.feature_engineering import FeatureEngineer
-from data_processing import DataProcessor
-from sklearn.model_selection import train_test_split
+from api_clients import fetch_market_data, fetch_top_investors_data
 
-# Function to load and preprocess data based on asset and type
-def load_data(asset: str, asset_type: str):
-    # Retrieve the raw data for the given asset
-    raw_data = aggregate_data(asset, asset_type)
+def load_raw_data():
+    """Load raw data from various market and investment sources."""
+    # Fetch market data (adjust this function as per your API client methods)
+    market_data = fetch_market_data()
+    
+    # Fetch data about top investors (if needed)
+    top_investors_data = fetch_top_investors_data()
 
-    # Feature engineering: Apply technical indicators, etc.
-    feature_engineer = FeatureEngineer()
-    processed_data = feature_engineer.create_features(raw_data)
+    # Merge or concatenate data sources as required
+    combined_data = merge_data_sources(market_data, top_investors_data)
 
-    # Data processing: Handle missing values and normalize features
-    data_processor = DataProcessor()
-    processed_data = data_processor.clean_and_normalize(processed_data)
+    return combined_data
 
-    # Split into training and test sets (80-20 split, customize if needed)
-    X = processed_data.drop(columns=["target"])  # Replace "target" with the actual target column name
-    y = processed_data["target"]  # Replace "target" with the actual target column name
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+def merge_data_sources(market_data, investors_data):
+    """Merge different data sources together for a unified dataset."""
+    # Placeholder merging logic - adjust based on your specific data structure
+    combined_data = market_data.merge(investors_data, on='common_key', how='inner')
 
-    return X_train, X_test, y_train, y_test
+    return combined_data
