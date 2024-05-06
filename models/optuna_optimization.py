@@ -1,60 +1,83 @@
+# /mnt/data/optuna_optimization.py
+
 import optuna
-import json
-from sklearn.metrics import mean_squared_error
-from data.load_data import load_data
-import xgboost as xgb
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader
+from sklearn.model_selection import train_test_split
+from data_processing import load_and_preprocess_data
+from feature_engineering import FeatureEngineeringPipeline
+from model_training import InvestmentModel  # Or import a base model if different
+import joblib
 
-# Load initial GridSearch parameters
-def load_gridsearch_params(filename='models/json/grid_content.json'):
-    with open(filename, 'r') as file:
-        return json.load(file)
+# Load pre-tuned model
+base_model = joblib.load('/mnt/data/best_tuned_model.pkl')
 
-# Objective function for Optuna optimization
-def objective(trial, asset: str, asset_type: str):
-    params = {
-        "n_estimators": trial.suggest_int("n_estimators", 50, 200),
-        "max_depth": trial.suggest_int("max_depth", 3, 7),
-        "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.2)
-    }
+# Load and preprocess data
+data = load_and_preprocess_data()
+features_pipeline = FeatureEngineeringPipeline()
+features, targets = features_pipeline.fit_transform(data)
+X_train, X_val, y_train, y_val = train_test_split(features, targets, test_size=0.2, random_state=42)
 
-    # Load training data based on asset and asset_type 
-    X_train, X_test, y_train, y_test = load_data(asset, asset_type)  # Implement this function
+class InvestmentDataset(torch.utils.data.Dataset):
+    def __init__(self, features, targets):
+        self.features = torch.tensor(features.values, dtype=torch.float32)
+        self.targets = torch.tensor(targets.values, dtype=torch.float32)
 
-    # Use the best parameters from GridSearch as a base
-    gridsearch_params = load_gridsearch_params()
-    if "xgboost" in gridsearch_params:
-        params.update(gridsearch_params["xgboost"]["best_params"])
+    def __len__(self):
+        return len(self.features)
 
-    model = xgb.XGBRegressor(**params)
-    model.fit(X_train, y_train)
-    y_pred = model.predict(X_test)
-    mse = mean_squared_error(y_test, y_pred)
+    def __getitem__(self, index):
+        return self.features[index], self.targets[index]
 
-    return mse
+# Create data loaders
+train_loader = DataLoader(InvestmentDataset(X_train, y_train), batch_size=64, shuffle=True)
+val_loader = DataLoader(InvestmentDataset(X_val, y_val), batch_size=64)
 
-# Run an Optuna optimization study
+# Define an Optuna objective function
+def objective(trial):
+    # Suggest hyperparameters
+    hidden_units = trial.suggest_int('hidden_units', 32, 256, step=32)
+    num_layers = trial.suggest_int('num_layers', 1, 4)
+    dropout = trial.suggest_float('dropout', 0.1, 0.5)
+    learning_rate = trial.suggest_loguniform('learning_rate', 1e-5, 1e-2)
 
-def run_optuna_optimization(asset: str, asset_type: str, n_trials: int = 50):
-    """Run an Optuna optimization study across different financial assets.
+    # Create a model using suggested hyperparameters
+    model = InvestmentModel(hidden_units=hidden_units, num_layers=num_layers, dropout=dropout)
+    criterion = nn.MSELoss()
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
-    Args:
-        asset (str): Symbol or identifier of the asset to analyze.
-        asset_type (str): Type of asset to analyze (stock, crypto, index, options).
-        n_trials (int): Number of trials for optimization.
-    """
-    study = optuna.create_study(direction="minimize")
-    study.optimize(lambda trial: objective(trial, asset, asset_type), n_trials=n_trials)
+    # Training loop
+    for epoch in range(10):  # Or set a different number of epochs
+        model.train()
+        for batch in train_loader:
+            inputs, labels = batch
+            optimizer.zero_grad()
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
 
-    print(f"Best trial:\n{study.best_trial}")
-    print(f"Best parameters:\n{study.best_params}")
+    # Validation loop
+    model.eval()
+    val_loss = 0
+    with torch.no_grad():
+        for batch in val_loader:
+            inputs, labels = batch
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            val_loss += loss.item()
 
-    # Save the results to a JSON file
-    results = {
-        "best_trial": str(study.best_trial),
-        "best_params": study.best_params
-    }
-    with open('models/json/optuna_content.json', 'w') as file:
-        json.dump(results, file)
+    return val_loss
 
-    return results
+# Run the Optuna study
+study = optuna.create_study(direction='minimize')
+study.optimize(objective, n_trials=50)
 
+# Print best hyperparameters
+best_params = study.best_params
+print(f"Best Hyperparameters: {best_params}")
+
+# Optionally save the final model or the Optuna study itself
+joblib.dump(study, '/mnt/data/optuna_study.pkl')

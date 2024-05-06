@@ -1,78 +1,71 @@
-from sklearn.model_selection import GridSearchCV, train_test_split
-from sklearn.linear_model import LinearRegression
-from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
-from sklearn.metrics import mean_squared_error, mean_absolute_error
-import pandas as pd
-import xgboost as xgb
-from api.api_clients import aggregate_data
-from features.feature_engineering import FeatureEngineer
-from data.data_processing import DataProcessor
-import json
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, Dataset
+from data_processing import load_and_preprocess_data
+from feature_engineering import FeatureEngineeringPipeline
+from model_architecture import InvestmentModel
+from sklearn.model_selection import train_test_split
 
-class ModelTrainer:
-    def advanced_grid_search_tune_model(stock_data: pd.DataFrame):
-        """Advanced tuning of different regression models using GridSearchCV.
+# Configuration parameters
+LEARNING_RATE = 0.001
+BATCH_SIZE = 64
+NUM_EPOCHS = 50
+MODEL_PATH = "/mnt/data/saved_model.pt"
 
-        Args:
-            stock_data (pd.DataFrame): DataFrame with technical indicators.
+# Load and preprocess data
+data = load_and_preprocess_data()
+features_pipeline = FeatureEngineeringPipeline()
+features, targets = features_pipeline.fit_transform(data)
 
-        Returns:
-            dict: Results with the best models and their evaluation metrics.
-        """
-        # Select features and target variable
-        feature_columns = ["sma_20", "sma_50", "sma_200", "ema_20", "ema_50", "price_pct_change", "on_balance_volume"]
-        target_column = "close"
+# Split data into training and validation sets
+X_train, X_val, y_train, y_val = train_test_split(features, targets, test_size=0.2, random_state=42)
 
-        X = stock_data[feature_columns].fillna(0)
-        y = stock_data[target_column].fillna(0)
+# Custom Dataset class to handle our data
+class InvestmentDataset(Dataset):
+    def __init__(self, features, targets):
+        self.features = torch.tensor(features.values, dtype=torch.float32)
+        self.targets = torch.tensor(targets.values, dtype=torch.float32)
 
-        # Split into training and test sets (80-20 split)
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    def __len__(self):
+        return len(self.features)
 
-        # Define models and parameter grids for grid search
-        param_grids = {
-            "linear": {"fit_intercept": [True, False]},
-            "random_forest": {
-                "n_estimators": [50, 100, 200],
-                "max_depth": [5, 10, 15, None],
-                "min_samples_split": [2, 5, 10],
-                "min_samples_leaf": [1, 2, 4]
-            },
-            "gradient_boosting": {
-                "n_estimators": [50, 100, 200],
-                "max_depth": [3, 5, 7],
-                "learning_rate": [0.01, 0.1, 0.2]
-            },
-            "xgboost": {
-                "n_estimators": [50, 100, 200],
-                "max_depth": [3, 5, 7],
-                "learning_rate": [0.01, 0.1, 0.2]
-            }
-        }
+    def __getitem__(self, index):
+        return self.features[index], self.targets[index]
 
-        # Models
-        models = {
-            "linear": LinearRegression(),
-            "random_forest": RandomForestRegressor(),
-            "gradient_boosting": GradientBoostingRegressor(),
-            "xgboost": xgb.XGBRegressor()
-        }
+# Prepare data loaders
+train_loader = DataLoader(InvestmentDataset(X_train, y_train), batch_size=BATCH_SIZE, shuffle=True)
+val_loader = DataLoader(InvestmentDataset(X_val, y_val), batch_size=BATCH_SIZE)
 
-        # Perform GridSearchCV tuning and store results
-        best_models = {}
-        for model_name, model in models.items():
-            grid_search = GridSearchCV(model, param_grid=param_grids[model_name], cv=3, scoring="neg_mean_squared_error")
-            grid_search.fit(X_train, y_train)
-            best_models[model_name] = {
-                "best_params": grid_search.best_params_,
-                "best_score": grid_search.best_score_
-            }
+# Initialize the model, loss function, and optimizer
+model = InvestmentModel()
+criterion = nn.MSELoss()
+optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
-        # Save the results to a JSON file
-        results = {
-            "best_models": best_models
-        }
-        with open('models/json/grid_content.json', 'w') as file:
-            json.dump(results, file)
+# Training loop
+for epoch in range(NUM_EPOCHS):
+    model.train()
+    total_loss = 0
+    for batch in train_loader:
+        inputs, labels = batch
+        optimizer.zero_grad()
+        outputs = model(inputs)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
+        total_loss += loss.item()
 
-        return best_models
+    # Validation after each epoch
+    model.eval()
+    val_loss = 0
+    with torch.no_grad():
+        for batch in val_loader:
+            inputs, labels = batch
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            val_loss += loss.item()
+
+    print(f"Epoch {epoch + 1}/{NUM_EPOCHS}, Training Loss: {total_loss:.4f}, Validation Loss: {val_loss:.4f}")
+
+# Save the trained model
+torch.save(model.state_dict(), MODEL_PATH)

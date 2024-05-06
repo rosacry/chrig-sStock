@@ -13,14 +13,14 @@ def run_streamlit():
 def main():
     # Setup argument parser to select the UI type
     parser = argparse.ArgumentParser(description="Stock AI Bot Main Application")
-    parser.add_argument("--interface", type=str, choices=["cli", "ui"], required=True,
-                        help="Choose the interface to start the application ('cli' or 'ui').")
+    parser.add_argument("--interface", type=str, choices=["cli", "gui"], required=True,
+                        help="Choose the interface to start the application ('cli' or 'gui').")
     args = parser.parse_args()
 
     # Launch the desired interface
     if args.interface == "cli":
         run_cli()
-    elif args.interface == "ui":
+    elif args.interface == "gui":
         run_streamlit()
 
 if __name__ == "__main__":

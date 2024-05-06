@@ -109,3 +109,39 @@ Once the user deposits money, the bot starts and never ends (i want to put it on
 
 
 service account ID for gce: chrigsstock@chrigsstock.iam.gserviceaccount.com
+
+
+Upload your model files using the gsutil command:
+
+    gsutil cp path/to/your/model_file gs://your-gcs-bucket/model_directory/
+
+Accessing Models from GCS:
+
+    In your Python code, use the google-cloud-storage library to download models:
+
+python
+
+from google.cloud import storage
+
+def download_model_from_gcs(bucket_name, source_blob_name, destination_file_name):
+    """Downloads a model file from the specified GCS bucket."""
+    client = storage.Client()
+    bucket = client.bucket(bucket_name)
+    blob = bucket.blob(source_blob_name)
+    blob.download_to_filename(destination_file_name)
+    print(f"Model downloaded to {destination_file_name}.")
+
+Automate Model Updates:
+
+    Automate the upload process by creating a script that uploads models to GCS after each training session.
+
+
+
+update unified_tuning such that it adds model_tuning
+
+create the join_collaborative_training() function in the streamlit_app.py file such that it connects everything together given my attached files.
+
+
+make models more modular, implement correctly in distributed_training.py
+
+create an evaluation for the ai/model

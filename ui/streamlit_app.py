@@ -1,9 +1,10 @@
+import torch
 import streamlit as st
-from distributed_training import initialize_distributed_training  # Assuming a function is defined here
-from unified_tuning import tune_model  # Assuming tuning functions are defined here
-from data_processing import preprocess_data  # Assuming data processing is implemented here
-from feature_engineering import extract_features  # Feature engineering functions
-from model_training import train_model, run_investment_bot  # Primary model training function
+from distributed.distributed_training import DistributedTraining # Assuming a function is defined here
+from optimization.unified_tuning import tune_model  # Assuming tuning functions are defined here
+from data.data_processing import DataProcessor # Assuming data processing is implemented here
+from features.feature_engineering import FeatureEngineer# Feature engineering functions
+from optimization.model_training import ModelTrainer # Primary model training function
 import os
 import threading
 
@@ -45,16 +46,27 @@ def set_risk_level(level: str):
 def join_collaborative_training():
     """Joins the collaborative training session and begins training."""
     st.info("Initializing distributed training setup...")
-    initialize_distributed_training()
+    
+    # Initialize a distributed training instance
+    world_size = torch.cuda.device_count()
+    distributed_training = DistributedTraining(world_size=world_size)
+    
+    st.info("Loading financial data...")
+    raw_data = your_data_loading_module.load_financial_data()  # Replace with actual data loading function
+    
     st.info("Preprocessing financial data...")
-    raw_data = {}  # Replace with your actual method to aggregate all raw data
     processed_data = preprocess_data(raw_data)
+    
     st.info("Extracting features...")
     feature_data = extract_features(processed_data)
+    
     st.info("Tuning model...")
     best_params = tune_model(feature_data)
+    
     st.info("Starting collaborative model training...")
-    train_model(feature_data, hyperparameters=best_params)
+    model = your_model_architecture(**best_params)  # Define or import the appropriate model architecture
+    distributed_training.run_distributed_training(feature_data, model)
+    
     st.success("Collaborative training session started successfully!")
 
 def start_investment_bot():
