@@ -1,3 +1,20 @@
+from aiopg.sa import create_engine
+import asyncio
+
+async def create_db_pool():
+    return await create_engine(
+        user='your_username',
+        database='your_database',
+        host='your_host',
+        password='your_password',
+        minsize=1,
+        maxsize=10  # Adjust pool size according to your application's requirements
+    )
+
+# Global variable to hold the connection pool
+db_pool = asyncio.run(create_db_pool())
+
+
 import os
 import aiohttp
 import cachetools.func
