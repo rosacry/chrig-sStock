@@ -2,6 +2,7 @@ import os
 import aiohttp
 import cachetools.func
 import asyncio
+import requests
 
 # Market API keys
 ALPHA_VANTAGE_API_KEY = os.getenv('ALPHA_VANTAGE_API_KEY')
