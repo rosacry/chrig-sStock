@@ -65,3 +65,23 @@ async def fetch_market_data():
         all_market_data["eod_historical"] = None
 
     return all_market_data
+
+async def fetch_news_data():
+    # Assuming API details and endpoints for news data
+    news_api_key = os.getenv('NEWS_API_KEY')
+    try:
+        news_data = await get_cached_response("https://newsapi.org/v2/everything", {"apikey": news_api_key})
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching news data: {str(e)}")
+        news_data = None
+    return news_data
+
+async def fetch_social_media_data():
+    # Assuming API details and endpoints for social media sentiment data
+    social_media_api_key = os.getenv('SOCIAL_MEDIA_API_KEY')
+    try:
+        social_media_data = await get_cached_response("https://socialmediaapi.com/data", {"apikey": social_media_api_key})
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching social media data: {str(e)}")
+        social_media_data = None
+    return social_media_data
