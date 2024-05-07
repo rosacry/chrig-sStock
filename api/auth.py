@@ -4,11 +4,12 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from .models import User
+import os  # Added for environment variable access
 
-# Secret key generated with openssl
-SECRET_KEY = "YOUR_SECRET_KEY_GENERATED"
+# Using environment variable for secret key
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", "YOUR_SECRET_KEY_GENERATED")  # Default if not set
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 60  # Increased from 30 to 60 minutes
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -36,3 +37,4 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         return user
     except JWTError:
         raise credentials_exception
+
