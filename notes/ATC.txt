@@ -93,3 +93,9 @@ Deployment Preparation Steps
 Execution
 
 I will start by creating the Docker configuration for your application, which includes writing the Dockerfile and docker-compose.yml. Following this, I will assist in setting up a basic CI/CD pipeline that fits your development workflow.
+
+
+
+4.
+
+implement the best machine learning indicators for my program that align with my vision and connects everything together
