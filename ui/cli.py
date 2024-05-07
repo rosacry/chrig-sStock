@@ -5,16 +5,16 @@ from features.feature_engineering import FeatureEngineer
 from data.data_processing import DataProcessor
 from models.model_training import ModelTrainer
 from models.model_tuning import ModelTuner
-from optimization.unified_tuning import UnifiedTuner
-from distributed.distributed_training import DistributedTraining
-import pandas as pd
-import inquirer  # Added for interactive features
-
-# Initialize components
-fe = FeatureEngineer()
-mt = ModelTrainer()
-mtu = ModelTuner()
-ut = UnifiedTuner()
+8:from distributed.distributed_training import DistributedTraining
+9:import pandas as pd
+10:import inquirer  # Added for interactive features
+11:
+12:# Initialize components
+13:fe = FeatureEngineer()
+14:mt = ModelTrainer()
+15:mtu = ModelTuner()
+16:dt = DistributedTraining()
+17:console = Console()
 dt = DistributedTraining()
 console = Console()
 
