@@ -1,8 +1,6 @@
-# /mnt/data/streamlit_app.py
-
 import streamlit as st
-from api_clients import update_user_funds, withdraw_user_funds, fetch_portfolio_data
-from distributed.distributed_training import launch_ray_tune_study
+from api.api_clients import update_user_funds, withdraw_user_funds, fetch_portfolio_data
+from distributed.distributed_training import distributed_train_with_ray 
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
@@ -77,7 +75,7 @@ def join_collaborative_training():
     """Connect to GCE with Ray for collaborative training."""
     if st.button("Join Collaborative Training"):
         st.write("Connecting to Google Cloud Compute Engine (GCE) for collaborative training.")
-        launch_ray_tune_study()
+        distributed_train_with_ray()
 
 
 # Main Streamlit application function

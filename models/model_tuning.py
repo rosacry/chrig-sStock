@@ -1,12 +1,10 @@
-# /mnt/data/model_tuning.py
-
 from sklearn.model_selection import GridSearchCV, train_test_split
-from model_architecture import InvestmentModel
-from distributed_training import get_processed_data
+from data.model_architecture import InvestmentModel
+from data.load_data import get_processed_data
 import torch
 import joblib
 
-def tune_and_save_model(model_path='/mnt/data/best_tuned_model.pth'):
+def tune_and_save_model(model_path='models/model/aiModel.pth'):
     """Encapsulate grid search tuning and save the model."""
 
     # Fetch processed data from `distributed_training.py`

@@ -2,25 +2,15 @@
 
 import optuna
 from torch.utils.data import DataLoader, Dataset
-from model_architecture import InvestmentModel
-from distributed_training import get_processed_data
+from data.model_architecture import InvestmentModel
+from data.investment_dataset import InvestmentDataset
+from data.load_data import get_processed_data
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import joblib
 
-class InvestmentDataset(Dataset):
-    def __init__(self, features, targets):
-        self.features = torch.tensor(features.values, dtype=torch.float32)
-        self.targets = torch.tensor(targets.values, dtype=torch.float32)
-
-    def __len__(self):
-        return len(self.features)
-
-    def __getitem__(self, index):
-        return self.features[index], self.targets[index]
-
-def optimize_and_save_study(n_trials=50, study_path='/mnt/data/optuna_study.pkl'):
+def optimize_and_save_study(n_trials=50, study_path='models/model/optuna_study.pkl'):
     """Encapsulate Optuna hyperparameter optimization and save study results."""
 
     # Get processed data

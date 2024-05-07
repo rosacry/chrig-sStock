@@ -1,13 +1,11 @@
-# /mnt/data/distributed_training.py
-
 import ray
 from ray import tune
 from ray.tune.schedulers import ASHAScheduler
-from model_training import initialize_or_update_model
-from model_tuning import tune_and_save_model
-from optuna_optimization import optimize_and_save_study
+from models.model_training import initialize_or_update_model
+from models.model_tuning import tune_and_save_model
+from models.optuna_optimization import optimize_and_save_study
 
-def initialize_tune_optimize(num_epochs=10, incremental=False, model_path='/mnt/data/best_tuned_model.pth', optuna_trials=50):
+def initialize_tune_optimize(num_epochs=10, incremental=False, model_path='models/model/aiModel.pth', optuna_trials=50):
     """Initialize or update the model, tune it, and then run Optuna optimization."""
     # Step 1: Initialize or update the model
     initialize_or_update_model(model_path, num_epochs, incremental)

@@ -1,23 +1,10 @@
-# /mnt/data/model_training.py
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
-from model_architecture import InvestmentModel
-from distributed_training import get_processed_data
-
-
-class InvestmentDataset(Dataset):
-    def __init__(self, features, targets):
-        self.features = torch.tensor(features.values, dtype=torch.float32)
-        self.targets = torch.tensor(targets.values, dtype=torch.float32)
-
-    def __len__(self):
-        return len(self.features)
-
-    def __getitem__(self, index):
-        return self.features[index], self.targets[index]
+from data.model_architecture import InvestmentModel
+from data.investment_dataset import InvestmentDataset
+from data.load_data import get_processed_data
 
 
 def train_model(model, train_loader, val_loader, criterion, optimizer, num_epochs):
@@ -45,7 +32,7 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, num_epoch
         print(f"Epoch {epoch + 1}/{num_epochs}, Training Loss: {total_loss:.4f}, Validation Loss: {val_loss:.4f}")
 
 
-def initialize_or_update_model(model_path='path/to/saved_model.pth', num_epochs=10, incremental=False):
+def initialize_or_update_model(model_path='models/model/aiModel.pth', num_epochs=10, incremental=False):
     """Initialize a new model or load an existing one for incremental training."""
     # Initialize new or load pre-trained model
     model = InvestmentModel(input_size=100, hidden_units=64, num_layers=3, dropout=0.3)

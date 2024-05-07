@@ -249,7 +249,7 @@ import requests
 # Market API keys
 ALPHA_VANTAGE_API_KEY = os.getenv('ALPHA_VANTAGE_API_KEY')
 IEX_CLOUD_API_KEY = os.getenv('IEX_CLOUD_API_KEY')
-YAHOO_FINANCE_API_KEY = os.getenv('YAHOO_FINANCE_API_KEY')
+# YAHOO_FINANCE_API_KEY = os.getenv('YAHOO_FINANCE_API_KEY')
 QUANDL_API_KEY = os.getenv('QUANDL_API_KEY')
 POLYGON_API_KEY = os.getenv('POLYGON_API_KEY')
 EOD_HISTORICAL_API_KEY = os.getenv('EOD_HISTORICAL_API_KEY')
@@ -258,7 +258,7 @@ EOD_HISTORICAL_API_KEY = os.getenv('EOD_HISTORICAL_API_KEY')
 MARKET_API_ENDPOINTS = {
     "alpha_vantage": "https://www.alphavantage.co/query",
     "iex_cloud": "https://cloud.iexapis.com/stable",
-    "yahoo_finance": "https://yahoo-finance-api.com/",
+    # "yahoo_finance": "https://yahoo-finance-api.com/",
     "quandl": "https://www.quandl.com/api/v3/datasets",
     "polygon": "https://api.polygon.io/v2",
     "eod_historical": "https://eodhistoricaldata.com/api"
@@ -294,15 +294,15 @@ def fetch_market_data():
         print(f"Error fetching data from IEX Cloud: {str(e)}")
         all_market_data["iex_cloud"] = None
 
-    # Yahoo Finance
-    headers_yahoo = {"Authorization": f"Bearer {YAHOO_FINANCE_API_KEY}"}
-    try:
-        response = requests.get(MARKET_API_ENDPOINTS["yahoo_finance"], headers=headers_yahoo)
-        response.raise_for_status()
-        all_market_data["yahoo_finance"] = response.json()
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching data from Yahoo Finance: {str(e)}")
-        all_market_data["yahoo_finance"] = None
+    # # Yahoo Finance
+    # headers_yahoo = {"Authorization": f"Bearer {YAHOO_FINANCE_API_KEY}"}
+    # try:
+    #     response = requests.get(MARKET_API_ENDPOINTS["yahoo_finance"], headers=headers_yahoo)
+    #     response.raise_for_status()
+    #     all_market_data["yahoo_finance"] = response.json()
+    # except requests.exceptions.RequestException as e:
+    #     print(f"Error fetching data from Yahoo Finance: {str(e)}")
+    #     all_market_data["yahoo_finance"] = None
 
     # Quandl
     params_quandl = {"api_key": QUANDL_API_KEY}
@@ -337,31 +337,31 @@ def fetch_market_data():
     return all_market_data
 
 
-def fetch_top_investors_data():
-    """Fetch data about top investors from multiple APIs using their respective API keys."""
-    all_investors_data = {}
+# def fetch_top_investors_data():
+#     """Fetch data about top investors from multiple APIs using their respective API keys."""
+#     all_investors_data = {}
 
-    # Example: Replace this with actual APIs for investor data
-    headers_investor_1 = {"Authorization": f"Bearer {os.getenv('INVESTOR_API_KEY_1')}"}
-    headers_investor_2 = {"Authorization": f"Bearer {os.getenv('INVESTOR_API_KEY_2')}"}
+#     # Example: Replace this with actual APIs for investor data
+#     headers_investor_1 = {"Authorization": f"Bearer {os.getenv('INVESTOR_API_KEY_1')}"}
+#     headers_investor_2 = {"Authorization": f"Bearer {os.getenv('INVESTOR_API_KEY_2')}"}
 
-    # Investor API 1
-    try:
-        response = requests.get(INVESTOR_API_ENDPOINTS["investor_1"], headers=headers_investor_1)
-        response.raise_for_status()
-        all_investors_data["investor_1"] = response.json()
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching data from Investor 1: {str(e)}")
-        all_investors_data["investor_1"] = None
+#     # Investor API 1
+#     try:
+#         response = requests.get(INVESTOR_API_ENDPOINTS["investor_1"], headers=headers_investor_1)
+#         response.raise_for_status()
+#         all_investors_data["investor_1"] = response.json()
+#     except requests.exceptions.RequestException as e:
+#         print(f"Error fetching data from Investor 1: {str(e)}")
+#         all_investors_data["investor_1"] = None
 
-    # Investor API 2
-    try:
-        response = requests.get(INVESTOR_API_ENDPOINTS["investor_2"], headers=headers_investor_2)
-        response.raise_for_status()
-        all_investors_data["investor_2"] = response.json()
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching data from Investor 2: {str(e)}")
-        all_investors_data["investor_2"] = None
+#     # Investor API 2
+#     try:
+#         response = requests.get(INVESTOR_API_ENDPOINTS["investor_2"], headers=headers_investor_2)
+#         response.raise_for_status()
+#         all_investors_data["investor_2"] = response.json()
+#     except requests.exceptions.RequestException as e:
+#         print(f"Error fetching data from Investor 2: {str(e)}")
+#         all_investors_data["investor_2"] = None
 
-    return all_investors_data
+#     return all_investors_data
 

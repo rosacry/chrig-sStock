@@ -1,5 +1,6 @@
 import torch
 from torch.utils.data import Dataset
+
 class InvestmentDataset(Dataset):
     def __init__(self, features, targets):
         self.features = torch.tensor(features.values, dtype=torch.float32)
