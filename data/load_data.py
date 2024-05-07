@@ -4,14 +4,20 @@ from features.feature_engineering import FeatureEngineeringPipeline
 
 def load_raw_data():
     """Load raw data from various market and investment sources."""
-    # Fetch market data (adjust this function as per your API client methods)
+    # Fetch market data
     market_data = fetch_market_data()
     
-    # Fetch data about top investors (if needed)
-    # top_investors_data = fetch_top_investors_data()
+    # Fetch data about top investors
+    top_investors_data = fetch_top_investors_data()
+
+    # NEW: Fetch news and social media sentiment data
+    news_data = fetch_news_data()
+    social_media_data = fetch_social_media_data()
 
     # Merge or concatenate data sources as required
-    # combined_data = merge_data_sources(market_data, top_investors_data)
+    combined_data = merge_data_sources(market_data, top_investors_data, news_data, social_media_data)
+
+    return combined_data
 
     return market_data
 
