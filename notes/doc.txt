@@ -1,0 +1,37 @@
+Torch
+
+Python
+
+fastapi
+
+Alembic
+
+Sqlachemy
+
+Ray
+
+Google Cloud Enginge
+
+Streamlit
+
+numpy
+
+pandas
+
+sklearn
+
+optuna
+
+google.cloud, google.oath2, googleapiclient
+
+logging
+
+os
+
+subprocess
+
+argparse
+
+json (maybe)
+
+requests

@@ -172,3 +172,79 @@ main.py:
     Unified Tuning (unified_tuning.py):
         Combines grid search and Optuna-based tuning into a unified approach.
         Improvement: Separate concerns by decoupling tuning types for clearer implementation.
+
+
+
+You can work on the initial-fastapi-setup branch, I've been working on these things (transactions, depositing, withdrawing, fetching portfolio data, and client sided things) below, procees the initial_fastapi-setup branch:
+
+1. Define the API
+
+You will need a well-defined API to handle user interactions for transactions. RESTful APIs are commonly used for these purposes because they are easy to implement and can be consumed by any client that understands HTTP.
+2. Database Design
+
+Choose a database that can handle high concurrency and is performant under load. PostgreSQL is a popular choice for transactional systems. You’ll need tables for users, transactions, portfolios, and possibly for assets like stocks, crypto, and options.
+3. Transaction Handling
+
+For financial transactions, atomicity and accuracy are crucial:
+
+    Use database transactions to ensure that your deposit and withdrawal operations are atomic.
+    Implement idempotency in your API endpoints to prevent duplicate transactions in case of request retries.
+
+4. Security Measures
+
+Security is critical when handling financial information:
+
+    Use HTTPS to secure API communications.
+    Implement authentication and authorization to protect user data. OAuth2 with JWT tokens is commonly used for these purposes.
+    Consider encryption for sensitive data both at rest and in transit.
+
+5. Fetching Portfolio Data
+
+For fetching portfolio data efficiently:
+
+    Design your database queries to be efficient and scalable. Use indexing on columns that are frequently queried.
+    Consider using caching strategies (e.g., Redis) to cache frequently accessed data like user portfolio summaries.
+
+6. Cloud and Distributed Computing
+
+Since you're using Google Cloud Compute Engine with the Ray framework, leverage these for distributed processing:
+
+    Use Ray to distribute data processing tasks across multiple nodes to speed up data scraping, analysis, and AI model training.
+    Cloud functions can be used for smaller, independent tasks like sending notifications or processing non-critical background tasks.
+
+7. UI/UX Design
+
+Since you want an appealing UI, consider frameworks like Streamlit or Dash for Python, which are great for building interactive web apps:
+
+    Streamlit is straightforward and can be used to build interactive apps quickly.
+    Dash is more customizable and suits complex dashboard needs.
+
+8. Collaborative Training
+
+For the training aspect where users can contribute compute power:
+
+    Implement a client-side application that can communicate with your server to receive model parameters and send back computed gradients.
+    Ensure you have a mechanism to aggregate these results securely and efficiently.
+
+9. Risk Management Options
+
+Allow users to define their risk tolerance and investment preferences:
+
+    Implement algorithms that can adjust investment strategies based on user-defined risk levels.
+    Provide clear options in the UI for users to set these preferences.
+
+Example Code Structure in Your Repository
+
+To get started, your repository could include directories like:
+
+    /api for your backend API code.
+    /db for your database schemas and migration scripts.
+    /client for the frontend UI code.
+    /ml_model for your machine learning models and training scripts.
+
+
+
+Here is my vision below, make sure it aligns with everything on my project along with my vision and pick up where i left off! (once you finish, proceed accordingly based on it being aligned with my vision and that everything connects together)
+
+vision:
+"I want to make a very complex, high-level, and sophisticated stock AI bot in python where the model gets trained to scrape a very vast and large amounts of data on the internet to learn what best choices to invest/sell in, whether it be stocks, crypto, and options. I also want it to scrape what the top investors are investing in as well, and just any information you deem necessary to calculate the best investments. I also want to use an appealing UI and design (likely using tqdm and rich libraries). I want to make the learning rate really low (even though it may take a lot more time to learn, train, and process) so it's more reliable, optimized and efficient (and since I have a nvidia 3080ti with a ryzen 5900x to train the model however long I want).I would like to also add on a training program that anyone can download and use to own compute power to assist in training the model such that it becomes more efficient, optimized, and reliable. With my computer specs, I want to train the model 24/7 (or for however long) and make it such that other people can join on the program and assist with training the model. I also want to have it give the user options as to how much risk it is allotted to make, how much money total to give it (and have the ai stock bot make the decisions itself on what to do with that money) and, if they want to invest/sell in stocks, crypto, options, or for the ai/model to make the decision for them on that. I'm using Google Cloud Compute Engine with Ray framework. In all, I want this to become one of the best stock AI bot I can possibly make it with your help."

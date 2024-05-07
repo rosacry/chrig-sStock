@@ -1,0 +1,19 @@
+Program Name: chrig
+
+Pricing: monthly subscription, maybe $10?
+
+Incentive to train the model: implement a system where users earn credits based on the amount of compute power they contribute to training the model. These credits can then be used to offset or entirely replace the monthly subscription fee.
+
+going about this..
+
+    Resource Allocation: Monitor the resources allocated by each user when they connect to your GCE server. This includes CPU cores, GPU resources, memory, and storage. GCE provides monitoring tools to track resource usage over time.
+
+    Task Execution Time: Measure the time taken for each task executed by users. Ray provides functionalities to track task execution time, allowing you to assess the duration and intensity of computational work performed by each user.
+
+    Ray Object Store Usage: Monitor the usage of Ray's object store, which is used for sharing data between tasks. Track the amount of data stored and accessed by each user, as well as the frequency of data transfers.
+
+    Remote Function Calls: Keep track of the number and frequency of remote function calls made by users. This indicates the level of computational workload handled by each user, as remote function calls typically involve executing tasks on the GCE server.
+
+    Task Dependency Graph: Analyze the task dependency graph to understand the computational dependencies and relationships between tasks executed by users. This can help in identifying bottlenecks, optimizing task scheduling, and measuring the overall contribution of each user.
+
+    Custom Metrics: Define custom metrics tailored to your specific training and tuning process. These metrics could capture aspects such as the complexity of tasks performed, the efficiency of resource utilization, and the overall impact on model training.

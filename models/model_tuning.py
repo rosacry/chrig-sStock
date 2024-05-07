@@ -2,7 +2,6 @@ from sklearn.model_selection import GridSearchCV, train_test_split
 from data.model_architecture import InvestmentModel
 from data.load_data import get_processed_data
 import torch
-import joblib
 
 def tune_and_save_model(model_path='models/model/aiModel.pth'):
     """Encapsulate grid search tuning and save the model."""

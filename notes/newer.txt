@@ -14,3 +14,5 @@ distributed_training.py
     make sure model_training, model_tuning, and optuna_optimization.py are correctly implemented
 
 for all models modify parameters for machine learning and that the model performs incremental learning and retraining
+
+make website with name chrig.io

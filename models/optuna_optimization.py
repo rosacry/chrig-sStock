@@ -5,7 +5,6 @@ from torch.utils.data import DataLoader, Dataset
 from data.model_architecture import InvestmentModel
 from data.investment_dataset import InvestmentDataset
 from data.load_data import get_processed_data
-import torch
 import torch.nn as nn
 import torch.optim as optim
 import joblib
