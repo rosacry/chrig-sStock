@@ -2,9 +2,16 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, Dataset
 from data.model_architecture import InvestmentModel
 from data.investment_dataset import InvestmentDataset
 from data.load_data import get_processed_data
+from data.web_scraping import scrape_financial_news
+
+# Enhanced data loading with web scraping data
 
 
 def train_model(model, train_loader, val_loader, criterion, optimizer, num_epochs):
@@ -63,4 +70,3 @@ def initialize_or_update_model(model_path='models/model/aiModel.pth', num_epochs
 
     # Save model state
     torch.save(model.state_dict(), model_path)
-
