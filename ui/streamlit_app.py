@@ -4,6 +4,7 @@ from api.api_clients import update_user_funds, withdraw_user_funds, fetch_portfo
 from distributed.distributed_training import distributed_train_with_ray
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
+from data.web_scraping import scrape_financial_news
 
 # Function to deposit user funds into their AI bot
 def deposit_funds():
@@ -50,7 +51,7 @@ def main():
     portfolio_data = fetch_portfolio_data()
     display_performance(portfolio_data)
 
-    st.write("The model will automatically update daily with the latest data from financial APIs.")
+    st.write("The model will automatically update daily with the latest data from financial APIs and now includes insights from financial news.")
 
 if __name__ == "__main__":
     main()
