@@ -2,6 +2,11 @@ import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 
+import numpy as np
+import pandas as pd
+from joblib import Parallel, delayed
+from .web_scraping import scrape_financial_news
+
 def process_individual_data(data, key):
     try:
         df = pd.DataFrame(data)
@@ -15,7 +20,7 @@ def clean_and_normalize_data(aggregated_data: dict):
     """Clean and normalize aggregated stock data.
 
     Args:
-        aggregated_data (dict): Raw data from various APIs.
+        aggregated_data (dict): Raw data from various APIs and scraped data.
     
     Returns:
         pd.DataFrame: Cleaned and normalized data.
