@@ -2,10 +2,11 @@ import argparse
 from rich.console import Console
 from tqdm import tqdm
 from features.feature_engineering import FeatureEngineer
-from data.data_processing import DataProcessor
-from models.model_training import ModelTrainer
-from models.model_tuning import ModelTuner
-from distributed.distributed_training import DistributedTraining
+from data.data_processing import clean_and_normalize_data
+from models.model_training import initialize_or_update_model
+from models.model_tuning import tune_and_save_model
+from models.optuna_optimization import optimize_and_save_study
+from distributed.distributed_training import distributed_train_with_ray
 import pandas as pd
 import inquirer
 import json
@@ -47,22 +48,22 @@ class UserInterface:
         with self.console.status("[bold green]Fetching and processing data...[/bold]") as status:
             # Simulate data aggregation
             data = {'data': 'Simulated stock data'}
-            cleaned_data = DataProcessor.clean_and_normalize_data(json.dumps(data))
+            cleaned_data = clean_and_normalize_data(json.dumps(data))
             enhanced_data = fe.add_technical_indicators(pd.DataFrame(cleaned_data))
 
         # Machine learning operations
         with tqdm(total=100, desc="Model Operations", bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt}") as progress_bar:
-            trained_model = mt.train(enhanced_data)
+            trained_model = initialize_or_update_model(enhanced_data)
             progress_bar.update(40)
-            tuned_model = mtu.tune(trained_model)
+            tuned_model = tune_and_save_model(trained_model)
             progress_bar.update(30)
-            optimized_model = mtu.optimize(tuned_model)
+            optimized_model = optimize_and_save_study(tuned_model)
             progress_bar.update(30)
 
         # Distributed training
         if args['contribute_compute']:
             try:
-                dt.run_distributed_training(enhanced_data, optimized_model)
+                distributed_train_with_ray(enhanced_data, optimized_model)
                 self.console.print("[bold]Distributed training completed successfully![/bold]")
             except Exception as e:
                 self.console.print(f"[bold red]Error during distributed training: {e}[/bold red]")

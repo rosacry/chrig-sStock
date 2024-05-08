@@ -7,7 +7,7 @@ import joblib
 def tune_and_save_model(model_path='models/model/aiModel.pth'):
     """Encapsulate grid search tuning and save the model."""
 
-    # Fetch processed data from `distributed_training.py`
+    # Get Processed Data
     features, targets = get_processed_data()
     X_train, X_val, y_train, y_val = train_test_split(features, targets, test_size=0.2, random_state=42)
 
