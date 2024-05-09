@@ -11,53 +11,34 @@ from sklearn.externals import joblib
 import data_processing
 import model_training
 import trading_algorithm
+from load_data import scrape_data, preprocess_data
+from model_training import train_model, update_model
+from trading_algorithm import make_trades
 
 # Configuration
 config_path = "path/to/config.json"
 config = load_config(config_path)
 
-# Function Definitions
-def scrape_data():
-    """Scrape data from various financial websites."""
-    # Implement data scraping logic here
-    pass
+# Main orchestration function
+def main():
+    # Step 1: Data collection and preprocessing
+    data = scrape_data()
+    processed_data = preprocess_data(data)
+    
+    # Step 2: Model training
+    model = train_model(processed_data)
+    
+    # Step 3: Making trades
+    make_trades(model, processed_data)
+    
+    # Step 4: Update the model incrementally
+    update_model()
 
-def preprocess_data(data):
-    """Preprocess the scraped data."""
-    # Implement preprocessing logic here
-    pass
-
-def train_model(data):
-    """Train the machine learning model."""
-    # Implement model training logic here
-    pass
-
-def make_trades(model, data):
-    """Use the trained model to make trading decisions."""
-    # Implement trading logic here
-    pass
-
-def update_model():
-    """Update the model incrementally with new data."""
-    # Implement model updating logic here
-    pass
-
+# Function to load configurations
 def load_config(path):
-    """Load the configuration file."""
     import json
     with open(path, 'r') as file:
         return json.load(file)
 
-def start_bot():
-    """Start the AI stock bot."""
-    print(f"Bot started at {datetime.now()}")
-    data = scrape_data()
-    processed_data = preprocess_data(data)
-    model = train_model(processed_data)
-    make_trades(model, processed_data)
-    update_model()
-
-    # Here, add any continuous operation or scheduling logic if necessary
-
 if __name__ == "__main__":
-    start_bot()
+    main()

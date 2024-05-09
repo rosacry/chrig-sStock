@@ -1,128 +1,55 @@
-from aiopg.sa import create_engine
-import asyncio
-import os
 import aiohttp
-import cachetools.func
 import asyncio
-import requests
+import backoff
 
-async def create_db_pool():
-    return await create_engine(
-        user='your_username',
-        database='your_database',
-        host='your_host',
-        password='your_password',
-        minsize=1,
-        maxsize=10  # Adjust pool size according to your application's requirements
-    )
+async def robust_fetch(session, url, params=None):
+    """ Asynchronously fetch data from a URL with error handling and exponential backoff. """
+    @backoff.on_exception(backoff.expo, aiohttp.ClientError, max_tries=5)
+    async def get_request():
+        async with session.get(url, params=params) as response:
+            response.raise_for_status()  # Will raise HTTPError for bad responses
+            return await response.json()
 
-# Global variable to hold the connection pool
-db_pool = asyncio.run(create_db_pool())
-
-
-
-
-# Market API keys
-ALPHA_VANTAGE_API_KEY = os.getenv('ALPHA_VANTAGE_API_KEY')
-# IEX_CLOUD_API_KEY = os.getenv('IEX_CLOUD_API_KEY')
-# QUANDL_API_KEY = os.getenv('QUANDL_API_KEY')
-# POLYGON_API_KEY = os.getenv('POLYGON_API_KEY')
-# EOD_HISTORICAL_API_KEY = os.getenv('EOD_HISTORICAL_API_KEY')
-
-# Cache for 10 minutes for less volatile data, 2 minutes for high-frequency updates
-@cachetools.func.ttl_cache(maxsize=100, ttl=600)
-def get_cached_response(url, params):
-    async def fetch(url, params):
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, params=params) as response:
-                response.raise_for_status()
-                return await response.json()
-
-    return asyncio.run(fetch(url, params))
-
-async def fetch_market_data():
-    all_market_data = {}
-
-    # Alpha Vantage
-    params_alpha = {"apikey": ALPHA_VANTAGE_API_KEY}
     try:
-        all_market_data["alpha_vantage"] = await get_cached_response("https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=IBM&interval=5min&apikey=demo", params_alpha)
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching data from Alpha Vantage: {str(e)}")
-        all_market_data["alpha_vantage"] = None
+        return await get_request()
+    except aiohttp.ClientError as http_err:
+        print(f"HTTP error occurred: {http_err}")
+    except Exception as err:
+        print(f"Other error occurred: {err}")
 
-    # # IEX Cloud
-    # headers_iex = {"Authorization": f"Bearer {IEX_CLOUD_API_KEY}"}
-    # try:
-    #     all_market_data["iex_cloud"] = await get_cached_response("https://cloud.iexapis.com/stable", headers_iex)
-    # except requests.exceptions.RequestException as e:
-    #     print(f"Error fetching data from IEX Cloud: {str(e)}")
-    #     all_market_data["iex_cloud"] = None
+async def fetch_market_data(api_key, real_time=True):
+    """ Fetch market data asynchronously using API key, with a choice between real-time or historical data. """
+    async with aiohttp.ClientSession() as session:
+        base_url = "https://api.financialmodelingprep.com/api/v3"
+        market_url = f"{base_url}/quotes/nyse" if real_time else f"{base_url}/historical/nyse"
+        return await robust_fetch(session, market_url, params={"apikey": api_key})
 
-    # # Quandl
-    # params_quandl = {"api_key": QUANDL_API_KEY}
-    # try:
-    #     all_market_data["quandl"] = await get_cached_response("https://www.quandl.com/api/v3/datasets", params_quandl)
-    # except requests.exceptions.RequestException as e:
-    #     print(f"Error fetching data from Quandl: {str(e)}")
-    #     all_market_data["quandl"] = None
+async def fetch_news_data(api_key, real_time=True):
+    """ Fetch news data asynchronously using API key, with a choice between real-time or historical data. """
+    async with aiohttp.ClientSession() as session:
+        base_url = "https://api.newsprovider.com"
+        news_url = f"{base_url}/news" if real_time else f"{base_url}/historical/news"
+        return await robust_fetch(session, news_url, params={"apikey": api_key})
 
-    # # Polygon
-    # headers_polygon = {"Authorization": f"Bearer {POLYGON_API_KEY}"}
-    # try:
-    #     all_market_data["polygon"] = await get_cached_response("https://api.polygon.io/v2", headers_polygon)
-    # except requests.exceptions.RequestException as e:
-    #     print(f"Error fetching data from Polygon: {str(e)}")
-    #     all_market_data["polygon"] = None
+async def fetch_top_investors_data(api_key):
+    """ Fetch top investors data asynchronously using API key. """
+    async with aiohttp.ClientSession() as session:
+        investors_url = "https://api.example.com/top_investors"
+        return await robust_fetch(session, investors_url, params={"apikey": api_key})
 
-    # # EOD Historical
-    # params_eod = {"api_token": EOD_HISTORICAL_API_KEY}
-    # try:
-    #     all_market_data["eod_historical"] = await get_cached_response("https://eodhistoricaldata.com/api", params_eod)
-    # except requests.exceptions.RequestException as e:
-    #     print(f"Error fetching data from EOD Historical: {str(e)}")
-    #     all_market_data["eod_historical"] = None
+async def fetch_social_media_data(api_key):
+    """ Fetch social media data asynchronously using API key. """
+    async with aiohttp.ClientSession() as session:
+        social_media_url = "https://api.example.com/social_media"
+        return await robust_fetch(session, social_media_url, params={"apikey": api_key})
 
-    return all_market_data
+async def main():
+    """ Main function to execute asynchronous API calls. """
+    market_data = await fetch_market_data("your_api_key", real_time=False)
+    news_data = await fetch_news_data("your_api_key", real_time=False)
+    investors_data = await fetch_top_investors_data("your_api_key")
+    social_media_data = await fetch_social_media_data("your_api_key")
+    print(market_data, news_data, investors_data, social_media_data)
 
-# async def fetch_news_data():
-#     # Assuming API details and endpoints for news data
-#     news_api_key = os.getenv('NEWS_API_KEY')
-#     try:
-#         news_data = await get_cached_response("https://newsapi.org/v2/everything", {"apikey": news_api_key})
-#     except requests.exceptions.RequestException as e:
-#         print(f"Error fetching news data: {str(e)}")
-#         news_data = None
-#     return news_data
-
-# async def fetch_social_media_data():
-#     # Assuming API details and endpoints for social media sentiment data
-#     social_media_api_key = os.getenv('SOCIAL_MEDIA_API_KEY')
-#     try:
-#         social_media_data = await get_cached_response("https://socialmediaapi.com/data", {"apikey": social_media_api_key})
-#     except requests.exceptions.RequestException as e:
-#         print(f"Error fetching social media data: {str(e)}")
-#         social_media_data = None
-#     return social_media_data
-
-# async def fetch_top_investors_data():
-#     pass
-
-# Updating user funds
-async def update_user_funds(amount):
-    # Add funds to the user's account
-    # Placeholder for updating funds logic
-    print(f"Updated user funds by ${amount}")
-
-# Withdrawing user funds
-async def withdraw_user_funds(amount, portfolio):
-    # Withdraw funds from the user's account
-    # Placeholder for withdrawing funds logic
-    print(f"Withdrew ${amount} from user funds based on portfolio")
-
-# Fetching portfolio data
-async def fetch_portfolio_data():
-    # Fetch current portfolio data
-    # Placeholder for fetching portfolio data logic
-    return {"stocks": {"AAPL": 100, "GOOGL": 150}, "total_value": 25000}
-
+if __name__ == "__main__":
+    asyncio.run(main())
