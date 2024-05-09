@@ -6,7 +6,7 @@ import optuna
 import joblib
 import os
 
-from data.investment_model import InvestmentModel
+from data.investment import InvestmentModel
 from data.load_data import get_processed_data
 from features.feature_engineering import FeatureEngineeringPipeline  # Updated import
 
@@ -74,6 +74,18 @@ def optimize_and_train(model_path='models/model/aiModel.pth'):
     study = optuna.create_study(direction='minimize')
     study.optimize(objective, n_trials=50)
     joblib.dump(study, model_path.replace('.pth', '_study.pkl'))
+
+    
+def predict(model, new_data):
+    """Predict new data using the trained model."""
+    pipeline = FeatureEngineeringPipeline()  # Assuming the same pipeline can be used for prediction
+    processed_features = pipeline.transform(new_data)  # Use transform, not fit_transform
+    features_tensor = torch.tensor(processed_features, dtype=torch.float32)
+
+    model.eval()
+    with torch.no_grad():
+        predictions = model(features_tensor)
+    return predictions
 
 if __name__ == '__main__':
     optimize_and_train()
