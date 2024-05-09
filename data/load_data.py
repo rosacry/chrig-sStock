@@ -1,4 +1,4 @@
-from api.api_clients import fetch_market_data, fetch_top_investors_data
+from api.api_clients import fetch_market_data, fetch_top_investors_data, fetch_news_data, fetch_social_media_data
 from data.data_processing import clean_and_normalize_data
 from features.feature_engineering import FeatureEngineeringPipeline 
 
@@ -18,8 +18,6 @@ def load_raw_data():
     combined_data = merge_data_sources(market_data, top_investors_data, news_data, social_media_data)
 
     return combined_data
-
-    return market_data
 
 def merge_data_sources(market_data, investors_data):
     """Merge different data sources together for a unified dataset."""

@@ -104,6 +104,9 @@ async def fetch_social_media_data():
         social_media_data = None
     return social_media_data
 
+async def fetch_top_investors_data():
+    pass
+
 # Updating user funds
 async def update_user_funds(amount):
     # Add funds to the user's account

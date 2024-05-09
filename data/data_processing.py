@@ -1,10 +1,6 @@
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
-
-import numpy as np
-import pandas as pd
-from joblib import Parallel, delayed
 from .web_scraping import scrape_financial_news
 
 def process_individual_data(data, key):

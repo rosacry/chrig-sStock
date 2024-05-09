@@ -1,43 +1,62 @@
 import ray
+import torch
+import torch.nn as nn
+import torch.optim as optim
 from ray import tune
 from ray.tune.schedulers import ASHAScheduler
-from models.model_training import initialize_or_update_model
-from models.model_tuning import tune_and_save_model
-from models.optuna_optimization import optimize_and_save_study
+from torch.utils.data import DataLoader, TensorDataset
 
-def initialize_tune_optimize(num_epochs=10, incremental=False, model_path='models/model/aiModel.pth', optuna_trials=50):
-    """Initialize or update the model, tune it, and then run Optuna optimization."""
-    initialize_or_update_model(model_path, num_epochs, incremental)
-    tune_and_save_model(model_path)
-    optimize_and_save_study(n_trials=optuna_trials)
+from data.investment_model import InvestmentModel
+from data.load_data import get_processed_data
+from models.model_training import train_model
+from features.feature_engineering import FeatureEngineeringPipeline
 
-def distributed_train_with_ray():
-    """Distributed training setup and launch with Ray."""
-    ray.init(ignore_reinit_error=True, num_cpus=12, num_gpus=1)
+ray.init()  # Automatically uses resources like GPUs if available
 
-    scheduler = ASHAScheduler(
-        metric="val_loss",
-        mode="min",
-        max_t=10,
-        grace_period=1,
-        reduction_factor=2
-    )
+@ray.remote(num_gpus=1)  # Specify GPU usage per actor
+class ModelTrainerGPU:
+    def __init__(self, model_path):
+        self.model_path = model_path
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.model = InvestmentModel().to(self.device)
+        self.pipeline = FeatureEngineeringPipeline()
 
-    analysis = tune.run(
-        initialize_tune_optimize,
-        resources_per_trial={"cpu": 4, "gpu": 1},
-        config={
-            "num_epochs": tune.grid_search([10, 20, 30]),
-            "incremental": tune.choice([True, False]),
-            "model_path": "/mnt/data/best_tuned_model.pth",
-            "optuna_trials": tune.grid_search([30, 50, 70])
-        },
-        scheduler=scheduler,
-        num_samples=10,
-        fail_fast=True
-    )
+    def train(self, features, targets, num_epochs=10):
+        features, targets = torch.tensor(features).float().to(self.device), torch.tensor(targets).float().to(self.device)
+        dataset = TensorDataset(features, targets)
+        train_loader = DataLoader(dataset, batch_size=64, shuffle=True)
+        criterion = nn.MSELoss()
+        optimizer = optim.Adam(self.model.parameters(), lr=0.001)
+        train_model(self.model, train_loader, criterion, optimizer, num_epochs)
+        torch.save(self.model.state_dict(), self.model_path)
+        return "Training complete"
 
-    best_config = analysis.best_config
-    print(f"Best configuration found: {best_config}")
-    return best_config
+@ray.remote  # Default to using CPU
+class ModelTrainerCPU:
+    def __init__(self, model_path):
+        self.model_path = model_path
+        self.device = 'cpu'
+        self.model = InvestmentModel().to(self.device)
+        self.pipeline = FeatureEngineeringPipeline()
 
+    def train(self, features, targets, num_epochs=10):
+        features, targets = torch.tensor(features).float().to(self.device), torch.tensor(targets).float().to(self.device)
+        dataset = TensorDataset(features, targets)
+        train_loader = DataLoader(dataset, batch_size=64, shuffle=True)
+        criterion = nn.MSELoss()
+        optimizer = optim.Adam(self.model.parameters(), lr=0.001)
+        train_model(self.model, train_loader, criterion, optimizer, num_epochs)
+        torch.save(self.model.state_dict(), self.model_path)
+        return "Training complete"
+
+def distributed_training(features, targets, model_path='path/to/model.pth'):
+    if torch.cuda.is_available():
+        trainer = ModelTrainerGPU.remote(model_path)
+    else:
+        trainer = ModelTrainerCPU.remote(model_path)
+    result = ray.get(trainer.train.remote(features, targets, num_epochs=10))
+    print(result)
+
+if __name__ == "__main__":
+    features, targets = get_processed_data()  # Make sure this loads or generates data appropriately
+    distributed_training(features, targets)

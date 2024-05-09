@@ -1,10 +1,7 @@
 import streamlit as st
 import plotly.express as px  # Added for advanced visualizations
 from api.api_clients import update_user_funds, withdraw_user_funds, fetch_portfolio_data
-from distributed.distributed_training import distributed_train_with_ray
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-from data.web_scraping import scrape_financial_news
+from distributed.distributed_training import distributed_training 
 
 # Function to deposit user funds into their AI bot
 def deposit_funds():
@@ -45,7 +42,7 @@ def main():
             st.sidebar.error(f"Error occurred: {str(e)}")
 
     if st.sidebar.button("Join Collaborative Training"):
-        distributed_train_with_ray()
+        distributed_training()
         st.sidebar.success("Connected to Google Cloud Compute Engine (GCE) for collaborative training.")
 
     portfolio_data = fetch_portfolio_data()
