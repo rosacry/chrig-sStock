@@ -1,0 +1,448 @@
+so just to be sure, based on my updated distributed_training.py, updated model_training.py, updated trading_algorithm.py, updated start_bot, and updated streamlit_app.py below. if the model finishes it's first iteration of training, tuning, and optimizing (2023-2024 of present day) it would still constantly fetch and train, tune, and optimize real-time data every day and so on. during this, if I and/or any peers decides to run the distributed_train button again (second iteration, 2022-2024 of present day) the first iteration model would still constantly fetch real-time data until the second iteration (being trained, tuned, and optimized with the first iterations hyper-parameters) of the model finishes (2022-2024 of present day) which would then automatically update the first iteration model, while continuously still fetch, train, and tune real-time data every day and so on (while the third iteration is under way with the second iterations hyper-parameters). below are the files again.
+
+
+updated distributed_training.py:
+
+import ray
+from models.model_training import optimize_and_train, load_or_initialize_model, save_checkpoint, load_checkpoint, continuous_update
+import os
+
+ray.init()  # Automatically uses resources like GPUs if available
+
+@ray.remote
+class ContinuousTrainer:
+    def __init__(self, model_path):
+        self.model_path = model_path
+        # Load or initialize the model and optimizer based on the existence of a checkpoint
+        if os.path.exists(model_path):
+            self.model, self.optimizer = load_checkpoint(model_path)
+        else:
+            self.model, self.optimizer = load_or_initialize_model(model_path)
+
+    def train(self, train_type='historical'):
+        # Train the model continuously with the ability to specify the type of training
+        if train_type == 'real_time':
+            continuous_update(self.model_path)  # This will train using real-time data
+        else:
+            self.model, self.optimizer = optimize_and_train(self.model_path)
+            save_checkpoint(self.model, self.optimizer, self.model_path)  # Save state frequently
+
+    def update_model_path(self, new_model_path):
+        self.model_path = new_model_path
+        if os.path.exists(new_model_path):
+            self.model, self.optimizer = load_checkpoint(new_model_path)
+        else:
+            self.model, self.optimizer = load_or_initialize_model(new_model_path)
+
+def manage_training_sessions():
+    # Initialize a remote trainer
+    trainer = ContinuousTrainer.remote('path/to/initial/model.pth')
+    training_task = trainer.train.remote(train_type='historical')
+
+    # Monitor training and handle updates dynamically
+    while True:
+        ready, _ = ray.wait([training_task], num_returns=1, timeout=None)
+        for result in ready:
+            print(f"Training session updated or completed: {result}")
+            # Optionally restart or update the training task based on specific conditions or changes
+
+if __name__ == "__main__":
+    manage_training_sessions()
+
+
+updated model_training.py:
+
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import optuna
+import joblib
+import pandas as pd
+import os
+import tempfile
+import shutil
+import sched
+import time
+from google.cloud import storage
+from torch.optim.lr_scheduler import StepLR
+from torch.utils.data import DataLoader, TensorDataset
+from data.investment import InvestmentModel
+from data.load_data import load_historical_data, load_real_time_data, get_features_and_targets
+from features.feature_engineering import FeatureEngineeringPipeline
+
+def train_model(model, train_loader, val_loader, criterion, optimizer, num_epochs, scheduler=None, early_stopping_patience=10):
+    early_stopping_counter = 0
+    best_val_loss = float('inf')
+    for epoch in range(num_epochs):
+        model.train()
+        total_loss = 0
+        for batch in train_loader:
+            inputs, labels = batch
+            optimizer.zero_grad()
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+            total_loss += loss.item()
+
+        if scheduler:
+            scheduler.step()
+
+        val_loss = 0
+        model.eval()
+        with torch.no_grad():
+            for batch in val_loader:
+                inputs, labels = batch
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
+                val_loss += loss.item()
+
+        print(f"Epoch {epoch + 1}/{num_epochs}, Training Loss: {total_loss:.4f}, Validation Loss: {val_loss:.4f}")
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            early_stopping_counter = 0
+        else:
+            early_stopping_counter += 1
+            if early_stopping_counter >= early_stopping_patience:
+                print(f"Early stopping triggered after {epoch + 1} epochs.")
+                break
+
+def load_or_initialize_model(model_path, model_type='train'):
+    specific_model_path = f"{model_path}_{model_type}.pth"
+    if os.path.exists(specific_model_path):
+        model = torch.load(specific_model_path)
+        print(f"Loaded {model_type} model from {specific_model_path}.")
+    else:
+        model = InvestmentModel(input_size=100, hidden_units=50, num_layers=2, dropout=0.2)
+        print("Initialized a new model as no pre-trained model was found.")
+    return model
+
+def optimize_and_train(model_path='models/model/aiModel.pth', num_trials=50):
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    features, targets = get_features_and_targets(load_historical_data())
+    pipeline = FeatureEngineeringPipeline()
+    features = pipeline.fit_transform(features)
+    features_tensor = torch.tensor(features, dtype=torch.float32)
+    targets_tensor = torch.tensor(targets, dtype=torch.float32)
+    dataset = TensorDataset(features_tensor, targets_tensor)
+    train_loader = DataLoader(dataset, batch_size=64, shuffle=True, num_workers=4)
+    val_loader = DataLoader(dataset, batch_size=64, shuffle=False, num_workers=4)
+    criterion = nn.MSELoss()
+    study = optuna.create_study(direction='minimize')
+    
+    def objective(trial):
+        model = load_or_initialize_model(model_path, trial).to(device)
+        optimizer = optim.Adam(model.parameters(), lr=trial.suggest_loguniform('learning_rate', 1e-5, 1e-2))
+        scheduler = StepLR(optimizer, step_size=10, gamma=0.1)
+        train_model(model, train_loader, val_loader, criterion, optimizer, 5, scheduler)
+        return criterion(model(val_loader.dataset[:][0].to(device)), val_loader.dataset[:][1].to(device)).item()
+
+    study.optimize(objective, n_trials=num_trials)
+    joblib.dump(study, model_path.replace('.pth', '_study.pkl'))
+    print("Optimization complete and model saved.")
+
+def continuous_update(model_path, update_interval=86400):  # 24 hours
+    scheduler = sched.scheduler(time.time, time.sleep)
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+    def update():
+        real_time_data = load_real_time_data()
+        if not real_time_data.empty:
+            features, _ = get_features_and_targets(real_time_data)
+            features = torch.tensor(features, dtype=torch.float32)
+            model = load_or_initialize_model(model_path, 'update').to(device)
+            model.eval()
+            with torch.no_grad():
+                predictions = model(features)
+            save_checkpoint(model, None, model_path)
+        scheduler.enter(update_interval, 1, update)
+
+    scheduler.enter(0, 1, update)  # Start immediately
+    scheduler.run()
+
+def save_checkpoint(model, optimizer, filepath):
+    temp_file = tempfile.NamedTemporaryFile(delete=False)
+    state = {'model_state_dict': model.state_dict()}
+    if optimizer:
+        state['optimizer_state_dict'] = optimizer.state_dict()
+    torch.save(state, temp_file.name)
+    temp_file.close()
+    shutil.move(temp_file.name, filepath)
+    print(f"Checkpoint saved to {filepath}")
+
+def load_checkpoint(filepath, model, optimizer=None):
+    if os.path.exists(filepath):
+        checkpoint = torch.load(filepath)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        if optimizer:
+            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        print(f"Loaded checkpoint from {filepath}")
+    else:
+        print("No checkpoint found at", filepath)
+    return model, optimizer
+
+
+    
+def predict(model, new_data):
+    """Predict new data using the trained model."""
+    from features.feature_engineering import FeatureEngineeringPipeline
+
+    # Ensure data is in the correct format, might need adjustments based on actual data structure
+    pipeline = FeatureEngineeringPipeline()
+    processed_features = pipeline.transform([new_data])  # Ensure input is iterable if needed
+    features_tensor = torch.tensor(processed_features, dtype=torch.float32).unsqueeze(0)  # Add batch dimension
+
+    model.eval()
+    with torch.no_grad():
+        prediction = model(features_tensor)
+    return prediction.item()  # Assuming the output is a single value
+
+def save_checkpoint(model, optimizer, filepath):
+    temp_file = tempfile.NamedTemporaryFile(delete=False)
+    state = {
+        'model_state_dict': model.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict()
+    }
+    torch.save(state, temp_file.name)
+    temp_file.close()
+    shutil.move(temp_file.name, filepath)  # Atomic operation on many systems
+    print(f"Checkpoint saved to {filepath}")
+
+def load_checkpoint(filepath, model, optimizer):
+    if os.path.exists(filepath):
+        checkpoint = torch.load(filepath)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        print(f"Loaded checkpoint from {filepath}")
+    else:
+        print("No checkpoint found at", filepath)
+    return model, optimizer
+
+
+def upload_model(bucket_name, source_file_name, destination_blob_name):
+    """Uploads a model file to the GCS bucket."""
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(destination_blob_name)
+    blob.upload_from_filename(source_file_name)
+    print(f"Model {source_file_name} uploaded to {bucket_name}/{destination_blob_name}.")
+
+def download_model(bucket_name, source_blob_name, destination_file_name):
+    """Downloads a model file from the GCS bucket."""
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(source_blob_name)
+    blob.download_to_filename(destination_file_name)
+    print(f"Model {bucket_name}/{source_blob_name} downloaded to {destination_file_name}.")
+
+if __name__ == '__main__':
+    optimize_and_train()
+
+
+
+updated trading_algorithm.py:
+
+
+# Imports
+import requests
+import json
+import pandas as pd
+import logging
+
+# Custom modules
+from models.model_training import load_or_initialize_model, predict
+from data.load_data import load_real_time_data, get_features_and_targets
+from features.feature_engineering import FeatureEngineeringPipeline
+
+# Setup the API key and endpoint
+API_KEY = 'your_alpaca_api_key'
+API_SECRET = 'your_alpaca_api_secret'
+BASE_URL = 'https://paper-api.alpaca.markets'  # Use https://api.alpaca.markets for live trading
+
+headers = {
+    'APCA-API-KEY-ID': API_KEY,
+    'APCA-API-SECRET-KEY': API_SECRET,
+    'Content-Type': 'application/json'
+}
+
+# Configuration
+config_path = "path/to/trading_config.json"
+config = json.load(open(config_path))
+
+# Setup logging
+logging.basicConfig(filename='trading_log.log', level=logging.INFO, format='%(asctime)s:%(levelname)s:%(message)s')
+
+def fetch_real_time_data():
+    """Fetch and process real-time stock data from defined APIs for immediate trading decisions."""
+    try:
+        real_time_data = load_real_time_data()
+        if not real_time_data.empty:
+            features, _ = get_features_and_targets(real_time_data)
+            return features
+        else:
+            logging.error("No real-time data available or data is empty")
+            return None
+    except Exception as e:
+        logging.error(f"Failed to fetch or process real-time data: {e}")
+        return None
+
+def evaluate_stocks():
+    """Evaluate all stocks for buying and selling decisions."""
+    market_data = fetch_real_time_data()
+    if not market_data.empty:
+        market_data['buy_decision'] = market_data.apply(lambda row: predict_and_decide(row, 'buy'), axis=1)
+        market_data['sell_decision'] = market_data.apply(lambda row: predict_and_decide(row, 'sell'), axis=1)
+
+        buys = market_data[market_data['buy_decision'] == 'buy']
+        sells = market_data[market_data['sell_decision'] == 'sell']
+
+        for index, row in buys.iterrows():
+            execute_trade(row['symbol'], 'buy')
+        for index, row in sells.iterrows():
+            execute_trade(row['symbol'], 'sell')
+
+def predict_and_decide(row, decision_type):
+    """Determine the best assets to buy or sell, evaluating all available market assets for buying."""
+    model_path = 'path/to/model.pth'
+    model = load_or_initialize_model(model_path, decision_type)
+    processed_row = FeatureEngineeringPipeline().transform(pd.DataFrame([row]))
+    return predict(model, processed_row.iloc[0])
+
+def execute_trade(symbol, decision, quantity=1):
+    """Execute trade based on the decision using Alpaca API."""
+    endpoint = f"{BASE_URL}/v2/orders"
+    data = {
+        "symbol": symbol,
+        "qty": str(quantity),
+        "side": decision,
+        "type": "market",
+        "time_in_force": "gtc"
+    }
+    try:
+        response = requests.post(endpoint, headers=headers, json=data)
+        response.raise_for_status()
+        logging.info(f"Executed {decision} for {quantity} shares of {symbol} at market price.")
+    except requests.exceptions.HTTPError as http_err:
+        logging.error(f"HTTP error occurred: {http_err} - {response.text}")
+    except Exception as err:
+        logging.error(f"An error occurred: {err}")
+
+if __name__ == "__main__":
+    evaluate_stocks()
+
+
+
+
+updated start_bot.py:
+
+
+
+# Imports
+import os
+import sys
+from datetime import datetime
+import requests
+import pandas as pd
+import numpy as np
+
+# Custom modules
+from models.model_training import continuous_update
+from trading_algorithm import evaluate_stocks
+
+# Configuration
+config_path = "path/to/config.json"
+
+# Function to load configurations
+def load_config(path):
+    import json
+    with open(path, 'r') as file:
+        config = json.load(file)
+    return config
+
+def main():
+    # Load configuration settings
+    config = load_config(config_path)
+
+    # Start continuous model updates using real-time data
+    continuous_update('models/model/aiModel.pth', update_interval=86400)  # This path needs to exist in the `model_training.py`
+
+    # Start evaluating stocks for trading decisions based on the model predictions
+    evaluate_stocks()
+
+if __name__ == "__main__":
+    main()
+
+
+
+
+
+updated streamlit_app.py:
+
+import streamlit as st
+import pandas as pd
+import json
+from models.model_training import continuous_update
+from models.distributed_training import manage_training_sessions
+from trading_algorithm import evaluate_stocks, fetch_real_time_data
+
+# Initialize the Streamlit app and page configuration
+st.set_page_config(page_title='Trading Bot Dashboard', layout='wide')
+
+# Load configuration settings from a JSON file
+def load_config():
+    with open('path/to/config.json', 'r') as file:
+        return json.load(file)
+
+config = load_config()
+
+def display_real_time_data():
+    """Display real-time market data."""
+    st.subheader('Real-Time Market Data')
+    data = fetch_real_time_data()
+    if data is not None:
+        st.dataframe(data)
+    else:
+        st.error("No real-time data available or data is empty.")
+
+def display_stock_evaluation():
+    """Allow users to evaluate stocks and display the results."""
+    st.subheader('Evaluate Stocks for Trading Decisions')
+    if st.button('Evaluate Stocks'):
+        stocks = evaluate_stocks()
+        if stocks is not None:
+            st.dataframe(stocks)
+        else:
+            st.error("No stocks to evaluate or no data available.")
+
+def model_training_section():
+    """Section to manage model training and updates."""
+    st.subheader('Model Training and Updates')
+    if st.button('Start Training Model'):
+        manage_training_sessions()
+        st.success('Model training initiated.')
+    if st.button('Update Model with Real-Time Data'):
+        continuous_update('models/model/aiModel.pth', update_interval=86400)
+        st.success('Continuous model update initiated.')
+
+def main():
+    """Main function to orchestrate the Streamlit app layout and functionality."""
+    st.title('Trading Bot Dashboard')
+
+    # Configuration settings display
+    st.sidebar.title("Configuration Settings")
+    st.sidebar.json(config)
+
+    # Layout different sections in tabs for better organization
+    tab1, tab2, tab3 = st.tabs(["Real-Time Data", "Stock Evaluation", "Model Management"])
+    
+    with tab1:
+        display_real_time_data()
+    
+    with tab2:
+        display_stock_evaluation()
+    
+    with tab3:
+        model_training_section()
+
+if __name__ == '__main__':
+    main()

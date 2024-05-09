@@ -23,22 +23,12 @@ def clean_and_normalize_data(data_frames):
     combined_df[numerical_cols] = (combined_df[numerical_cols] - combined_df[numerical_cols].mean()) / combined_df[numerical_cols].std()
     return combined_df
 
-def load_historical_data():
-    """Fetch and process historical data from multiple sources."""
-    market_data = fetch_market_data()
-    top_investors_data = fetch_top_investors_data()
-    news_data = fetch_news_data()
-    social_media_data = fetch_social_media_data()
+def load_historical_data(start_year):
+    # Assuming data filenames are formatted as 'historical/stock_data_{start_year}_to_{end_year}.csv'
+    filename = f'historical/stock_data_{start_year}_to_2024.csv'
+    data = pd.read_csv(filename)
     
-    raw_data = {
-        'market': market_data,
-        'investors': top_investors_data,
-        'news': news_data,
-        'social_media': social_media_data
-    }
-    
-    data_frames = Parallel(n_jobs=-1)(delayed(process_individual_data)(data, key) for key, data in raw_data.items())
-    cleaned_data = clean_and_normalize_data(data_frames)
+    cleaned_data = clean_and_normalize_data(data)
     return cleaned_data
 
 def load_real_time_data():
