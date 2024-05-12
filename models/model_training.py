@@ -9,6 +9,7 @@ import tempfile
 import shutil
 import sched
 import time
+import asyncio
 from google.cloud import storage
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader, TensorDataset
@@ -92,7 +93,7 @@ def continuous_update(model_path, update_interval=86400):  # 24 hours
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     def update():
-        real_time_data = load_real_time_data()
+        real_time_data = asyncio.run(load_real_time_data())
         if not real_time_data.empty:
             features, _ = get_features_and_targets(real_time_data)
             features = torch.tensor(features, dtype=torch.float32)

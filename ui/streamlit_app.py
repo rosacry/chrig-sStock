@@ -1,9 +1,11 @@
 import streamlit as st
 import threading
+import asyncio
 import json
 from models.model_training import continuous_update
 from distributed.distributed_training import manage_training_sessions
-from trading_algorithm import evaluate_stocks, fetch_real_time_data
+from trading_algorithm import evaluate_stocks 
+from data.load_data import load_real_time_data
 from utils.util import load_config, setup_logging, get_logger
 
 # Setup configuration and logging
@@ -22,7 +24,7 @@ def continuous_model_updates():
 # Display real-time market data
 def display_real_time_data():
     st.subheader('Real-Time Market Data')
-    data = fetch_real_time_data()
+    data = asyncio.run(load_real_time_data())
     if data is not None:
         st.dataframe(data)
     else:

@@ -1,6 +1,9 @@
-from api.api_clients import fetch_market_data, fetch_top_investors_data, fetch_news_data, fetch_social_media_data
+from api.api_clients import fetch_market_data 
+#from api.api_clients import fetch_top_investors_data, fetch_news_data, fetch_social_media_data
+#implement this later
+from asset_fetch.iex_symbols import fetch_iex_symbols
 from features.feature_engineering import FeatureEngineeringPipeline 
-from joblib import Parallel, delayed
+from alpaca_trade_api.rest import TimeFrame
 import numpy as np
 import pandas as pd
 
@@ -25,25 +28,20 @@ def clean_and_normalize_data(data_frames):
 
 def load_historical_data(start_year):
     # Assuming data filenames are formatted as 'historical/stock_data_{start_year}_to_{end_year}.csv'
-    filename = f'historical/stock_data_{start_year}_to_2024.csv'
+    filename = f'asset_fetch/stock_data/stock_data_{start_year}_to_2024.csv'
     data = pd.read_csv(filename)
     
     cleaned_data = clean_and_normalize_data(data)
     return cleaned_data
 
-def load_real_time_data():
+async def load_real_time_data():
     """Fetch and process real-time data using similar sources as historical data."""
-    # Assuming the same sources have real-time equivalents
-    real_time_market_data = fetch_market_data(real_time=True)
-    real_time_news_data = fetch_news_data(real_time=True)
-    
-    raw_data = {
-        'real_time_market': real_time_market_data,
-        'real_time_news': real_time_news_data
-    }
-    
-    data_frames = Parallel(n_jobs=-1)(delayed(process_individual_data)(data, key) for key, data in raw_data.items())
-    cleaned_data = clean_and_normalize_data(data_frames)
+    symbols = await fetch_iex_symbols()  # Assuming this function is designed to work asynchronously
+    real_time_market_data = await fetch_market_data(symbols, TimeFrame.Minute)
+
+    # Process and clean the data
+    data_frame_list = [process_individual_data(real_time_market_data, 'real_time_market')]
+    cleaned_data = clean_and_normalize_data(data_frame_list)
     return cleaned_data
 
 def get_features_and_targets(data):

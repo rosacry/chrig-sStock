@@ -1,55 +1,85 @@
-import aiohttp
+from alpaca_trade_api.rest import REST, TimeFrame
+from asset_fetch.iex_symbols import fetch_iex_symbols 
+import pandas as pd
 import asyncio
+import aiohttp
 import backoff
+from dotenv import load_dotenv
+import os
 
-async def robust_fetch(session, url, params=None):
+load_dotenv()
+
+api_key = os.getenv('AlPACA_API_KEY') 
+secret_key = os.getenv('AlPACA_SECRET_KEY')
+base_url = "https://paper-api.alpaca.markets"  # Use the appropriate URL for paper or live trading
+
+client = REST(api_key, secret_key, base_url)  # Initializing the REST client
+
+async def robust_fetch(session, url, params=None, headers=None):
     """ Asynchronously fetch data from a URL with error handling and exponential backoff. """
     @backoff.on_exception(backoff.expo, aiohttp.ClientError, max_tries=5)
     async def get_request():
-        async with session.get(url, params=params) as response:
+        async with session.get(url, params=params, headers=headers) as response:
             response.raise_for_status()  # Will raise HTTPError for bad responses
             return await response.json()
 
-    try:
-        return await get_request()
-    except aiohttp.ClientError as http_err:
-        print(f"HTTP error occurred: {http_err}")
-    except Exception as err:
-        print(f"Other error occurred: {err}")
-
-async def fetch_market_data(api_key, real_time=True):
-    """ Fetch market data asynchronously using API key, with a choice between real-time or historical data. """
     async with aiohttp.ClientSession() as session:
-        base_url = "https://api.financialmodelingprep.com/api/v3"
-        market_url = f"{base_url}/quotes/nyse" if real_time else f"{base_url}/historical/nyse"
-        return await robust_fetch(session, market_url, params={"apikey": api_key})
+        try:
+            return await get_request()
+        except aiohttp.ClientError as http_err:
+            print(f"HTTP error occurred: {http_err}")
+        except Exception as err:
+            print(f"Other error occurred: {err}")
+        return None
 
-async def fetch_news_data(api_key, real_time=True):
-    """ Fetch news data asynchronously using API key, with a choice between real-time or historical data. """
+
+async def fetch_market_data(symbols, timeframe=TimeFrame.Minute, chunk_size=100):
+    """Fetch market data asynchronously for given symbols using Alpaca SDK in real-time."""
+    responses = []
+    now = pd.Timestamp.utcnow()
+    start = (now - pd.DateOffset(minutes=5)).isoformat()
+    end = now.isoformat()
+    headers = {
+        'APCA-API-KEY-ID': api_key,
+        'APCA-API-SECRET-KEY': secret_key 
+    }
+
     async with aiohttp.ClientSession() as session:
-        base_url = "https://api.newsprovider.com"
-        news_url = f"{base_url}/news" if real_time else f"{base_url}/historical/news"
-        return await robust_fetch(session, news_url, params={"apikey": api_key})
+        for i in range(0, len(symbols), chunk_size):
+            symbol_chunk = symbols[i:i + chunk_size]
+            url = f"https://data.alpaca.markets/v2/stocks/bars"
+            params = {
+                'symbols': ','.join(symbol_chunk),
+                'start': start,
+                'end': end,
+                'timeframe': timeframe.value
+            }
+            data = await robust_fetch(session, url, params=params, headers=headers)
+            if data:
+                responses.append(pd.DataFrame(data))
+            await asyncio.sleep(60)  # Sleep to respect rate limit
 
-async def fetch_top_investors_data(api_key):
-    """ Fetch top investors data asynchronously using API key. """
+    return pd.concat(responses, ignore_index=True)
+
+async def fetch_news_data(api_key, secret_key, symbols=None, max_requests_per_minute=10):
+    """Fetches news data for specified symbols from Alpaca's News API."""
+    base_url = "https://data.alpaca.markets/v1beta1/news"
+    headers = {
+        'Apca-Api-Key-Id': api_key,
+        'Apca-Api-Secret-Key': secret_key
+    }
+    params = {'symbols': symbols} if symbols else {}
+
     async with aiohttp.ClientSession() as session:
-        investors_url = "https://api.example.com/top_investors"
-        return await robust_fetch(session, investors_url, params={"apikey": api_key})
+        news_articles = await robust_fetch(session, base_url, params, headers)
+        return news_articles.get('news', []) if news_articles else []
 
-async def fetch_social_media_data(api_key):
-    """ Fetch social media data asynchronously using API key. """
-    async with aiohttp.ClientSession() as session:
-        social_media_url = "https://api.example.com/social_media"
-        return await robust_fetch(session, social_media_url, params={"apikey": api_key})
-
+# Usage of asyncio to run the async functions
 async def main():
-    """ Main function to execute asynchronous API calls. """
-    market_data = await fetch_market_data("your_api_key", real_time=False)
-    news_data = await fetch_news_data("your_api_key", real_time=False)
-    investors_data = await fetch_top_investors_data("your_api_key")
-    social_media_data = await fetch_social_media_data("your_api_key")
-    print(market_data, news_data, investors_data, social_media_data)
+    symbols = fetch_iex_symbols()
+    market_data = await fetch_market_data(symbols)
+    news_data = await fetch_news_data(api_key, secret_key)
+    print(market_data, news_data)
 
 if __name__ == "__main__":
     asyncio.run(main())
