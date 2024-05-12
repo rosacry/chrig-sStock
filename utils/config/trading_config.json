@@ -1,0 +1,16 @@
+{
+    "api": {
+        "base_url": "https://paper-api.alpaca.markets",
+        "api_key": "your_api_key",
+        "api_secret": "your_api_secret"
+    },
+    "model": {
+        "path": "models/default_model.pth",
+        "update_interval": 86400
+    },
+    "logging": {
+        "filename": "trading_log.log",
+        "level": "INFO",
+        "format": "%(asctime)s:%(levelname)s:%(message)s"
+    }
+}

@@ -4,16 +4,15 @@ import json
 from models.model_training import continuous_update
 from distributed.distributed_training import manage_training_sessions
 from trading_algorithm import evaluate_stocks, fetch_real_time_data
+from utils.util import load_config, setup_logging, get_logger
+
+# Setup configuration and logging
+config = load_config('utils/config/trading_config.json')
+logger = get_logger(__name__)
+setup_logging(config['logging']['filename'])
 
 # Set page configuration
 st.set_page_config(page_title='Trading Bot Dashboard', layout='wide')
-
-# Load configuration settings
-def load_config():
-    with open('path/to/config.json', 'r') as file:
-        return json.load(file)
-
-config = load_config()
 
 # Continuous updates for the model using real-time data
 def continuous_model_updates():

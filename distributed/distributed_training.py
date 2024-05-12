@@ -31,7 +31,7 @@ class ContinuousTrainer:
             self.model, self.optimizer = load_or_initialize_model(new_model_path)
 
 def manage_training_sessions():
-    trainer = ContinuousTrainer.remote('path/to/initial/model.pth')
+    trainer = ContinuousTrainer.remote('models/model/model.pth')
     training_task = trainer.train.remote(train_type='historical')
 
     while True:

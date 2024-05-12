@@ -8,6 +8,7 @@ import logging
 from models.model_training import load_or_initialize_model, predict
 from data.load_data import load_real_time_data, get_features_and_targets
 from features.feature_engineering import FeatureEngineeringPipeline
+from utils.util import load_config, setup_logging, get_logger
 
 # Setup the API key and endpoint
 API_KEY = 'your_alpaca_api_key'
@@ -20,9 +21,10 @@ headers = {
     'Content-Type': 'application/json'
 }
 
-# Configuration
-config_path = "path/to/trading_config.json"
-config = json.load(open(config_path))
+# Load configuration and setup logging
+config = load_config('utils/config/trading_config.json')
+logger = get_logger(__name__)
+setup_logging(config['logging']['filename'])
 
 # Setup logging
 logging.basicConfig(filename='trading_log.log', level=logging.INFO, format='%(asctime)s:%(levelname)s:%(message)s')
@@ -84,3 +86,6 @@ def execute_trade(symbol, decision, quantity=1):
 
 if __name__ == "__main__":
     evaluate_stocks()
+
+#setup api key and secret
+#setup cron job to run the script every 5 minutes?
